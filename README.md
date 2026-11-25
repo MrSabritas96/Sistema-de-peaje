@@ -64,3 +64,6 @@ python training/diagnostico_entorno.py
 Configurar MODEL_DIR y la credencial de inferencia en el entorno del servidor. Arrancar con `uvicorn inference.main:app --host 0.0.0.0 --port 8000`. En la aplicación móvil y web, npm ci instala las versiones de cada archivo package-lock.json. Las claves privadas permanecen en el servidor. Los archivos .env.example solo contienen nombres de variables.
 
 La versión desplegada devuelve pasajeros como estimación geométrica basada en las máscaras de personas del vehículo objetivo. Los pasos históricos sin medición mantienen el valor nulo. Para la bonificación faltan métricas contra conteo humano y evidencia con varios pasajeros. Ver docs/Informe_tecnico.pdf para los resultados medidos.
+
+## Caseta desde el navegador
+Desde Android o iOS, abrir https://srv2199251.hstgr.cloud/movil en el navegador, iniciar sesión con Google, permitir cámara y pulsar Iniciar captura. La navegación superior conecta con Operaciones y Monitor. La caseta usa el mismo endpoint que Android y suspende la captura al ocultar la página.

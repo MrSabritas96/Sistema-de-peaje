@@ -2,15 +2,8 @@
 import {Confirm} from './confirm';
 import {Tools} from './tools';
 import {useEffect,useState} from 'react';
-import {initializeApp,getApps} from 'firebase/app';
-import {getAuth,GoogleAuthProvider,signInWithPopup} from 'firebase/auth';
-
+import {call,googleLogin} from './client';
 type Step={id:number;fecha:string;placa:string;categoria:string;pasajeros:number|null;ejes:number|null;estado:string;monto:number|null;tarifa_referencia:number|null;sentido:string;evidencia:string};
-async function call(path:string,options?:RequestInit){
-  const response=await fetch('/api/v1/'+path,options);
-  if(!response.ok)throw new Error((await response.json()).detail||'Error de conexión');
-  return response.json();
-}
 export default function Page(){
  const [revenue,setRevenue]=useState('0'),[alarm,setAlarm]=useState('');
  const [steps,setSteps]=useState<Step[]>([]),[active,setActive]=useState(false),[message,setMessage]=useState(''),[plate,setPlate]=useState(''),[answer,setAnswer]=useState('');
@@ -41,13 +34,11 @@ export default function Page(){
  },[active]);
  async function login(){
   try{
-   const fb=getApps()[0]||initializeApp({appId:process.env.NEXT_PUBLIC_FIREBASE_APP_ID,apiKey:process.env.NEXT_PUBLIC_FIREBASE_API_KEY,authDomain:process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,projectId:process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID});
-   const session=await signInWithPopup(getAuth(fb),new GoogleAuthProvider());
-   await call('auth/google',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id_token:await session.user.getIdToken()})});
+   await googleLogin();
    setActive(true)
   }catch(e){setMessage(String(e))}
  }
- return <><header>LA PAZ · CONTROL DE PEAJE</header><h1>Centro de operaciones</h1>
+ return <><div className="mast"><header>CONTROL DE PEAJE · LA PAZ</header><h1>Centro de operaciones</h1></div>
  {!active?<button onClick={login}>Continuar con Google</button>:<>
  <section><h2>Consulta de placa</h2><form onSubmit={async e=>{e.preventDefault();try{const r=await call('consulta/'+encodeURIComponent(plate));setAnswer(r.respuesta);setMatches(r.sugerencias);filterBy(r.sugerencias[0]??(r.ultimo_paso?r.ultimo_paso.placa:''))}catch(e){setAnswer(String(e))}}}><input aria-label="Placa" value={plate} onChange={e=>setPlate(e.target.value)} placeholder="1234ABC" required/><button>Consultar</button></form><output>{answer}</output>{matches.map(p=><button key={p} onClick={()=>filterBy(p)}>{p}</button>)}</section>
  <section><h2>Pasos recientes</h2><small>¹ Estimación de personas visibles dentro del vehículo.</small><p>Recaudación acumulada: {revenue} Bs</p><p role="alert">{stateLabel(alarm.replace("Alerta · ",""))}</p>{filter&&<p>Placa {filter} <button onClick={()=>filterBy("")}>Ver todos</button></p>}{rows.length===0?<p>Aún no hay pasos registrados.</p>:<div className="scroll"><table><thead><tr>{['Hora','Placa','Categoría','Ejes','Pasajeros visibles¹','Sentido','Estado','Tarifa calculada','Evidencia'].map(t=><th key={t}>{t}</th>)}</tr></thead><tbody>{rows.slice(current*6,current*6+6).map(s=><tr key={s.id}><td>{new Date(s.fecha).toLocaleTimeString('es-BO',{timeZone:'America/La_Paz'})}</td><td>{s.placa||'Sin lectura'}</td><td>{s.categoria}</td><td>{s.ejes??'—'}</td><td>{s.pasajeros??'—'}</td><td>{s.sentido}</td><td>{stateLabel(s.estado)}</td><td>{s.ejes!=null&&(s.monto??s.tarifa_referencia)!=null?(s.monto??s.tarifa_referencia)+' Bs.':'—'}</td><td><a href={'/api/v1/evidencias/'+s.evidencia}><img loading="lazy" width="96" alt="Detecciones del paso" src={'/api/v1/evidencias/'+s.evidencia}/></a>{['REVISION_MANUAL','SIN_PLACA','ERROR_OCR'].includes(s.estado)&&<Confirm id={s.id} done={()=>call('historial').then(setSteps)}/>} {canHide&&<button className="quiet" onClick={()=>hide(s.id)}>Quitar del panel</button>}</td></tr>)}</tbody></table></div>}{pages>1&&<nav aria-label="Paginación"><button disabled={!current} onClick={()=>setPage(current-1)}>Anterior</button><span>{current+1} de {pages}</span><button disabled={current+1>=pages} onClick={()=>setPage(current+1)}>Siguiente</button></nav>}</section>
