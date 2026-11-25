@@ -276,7 +276,7 @@ async def events(request:Request,account=Depends(user)):
         while not await request.is_disconnected():
             user(request)
             current=history(account)
-            marker={row["id"]:(row["estado"],row["evidencia"]) for row in current}
+            marker={row["id"]:dict(row) for row in current}
             if first or marker!=previous:
                 yield event("step.snapshot",current)
                 for row in reversed(current):
@@ -289,6 +289,7 @@ async def events(request:Request,account=Depends(user)):
             recent=alerts(account)
             ids={a["id"] for a in recent}
             if first or ids!=seen_alerts:
+                yield event("alert.snapshot",recent)
                 for alert in reversed(recent):
                     if not first and alert["id"] not in seen_alerts:
                         yield event("alert.created",alert)
@@ -299,7 +300,7 @@ async def events(request:Request,account=Depends(user)):
                 last_beat=now
             first=False
             await asyncio.sleep(1)
-    return StreamingResponse(stream(),media_type="text/event-stream",headers={"Cache-Control":"no-cache"})
+    return StreamingResponse(stream(),media_type="text/event-stream",headers={"Cache-Control":"no-cache, no-transform","X-Accel-Buffering":"no"})
 from decimal import Decimal
 from pydantic import Field
 

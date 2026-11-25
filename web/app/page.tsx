@@ -19,18 +19,28 @@ export default function Page(){
    catch(e){setMessage(String(e))}
  }
  useEffect(()=>{let live=true;if(latest)call('pasos/'+latest.id+'/inferencia').then(v=>{if(live)setDetail(v)}).catch(()=>{if(live)setDetail(null)});return()=>{live=false}},[latest?.id,latest?.evidencia]);
- useEffect(()=>{let live=true;if(filter)call('placas/'+encodeURIComponent(filter)+'/historial').then(v=>{if(live)setFiltered(v)}).catch(e=>{if(live)setMessage(String(e))});return()=>{live=false}},[filter,latest?.id,latest?.evidencia]);
+ useEffect(()=>{let live=true;if(filter)call('placas/'+encodeURIComponent(filter)+'/historial').then(v=>{if(live)setFiltered(v)}).catch(e=>{if(live)setMessage(String(e))});return()=>{live=false}},[filter,steps]);
  function filterBy(p:string){setFilter(p);setFiltered(p?[]:null);setPage(0)}
  function stateLabel(v:string){return ({ERROR_OCR:'Placa por confirmar',SIN_PLACA:'Placa sin lectura',REVISION_MANUAL:'Por revisar'} as Record<string,string>)[v]??v.replaceAll('_',' ')}
  useEffect(()=>{call('historial').then(data=>{setSteps(data);setActive(true)}).catch(()=>{});},[]);
  useEffect(()=>{
    if(!active)return;
-   const events=new EventSource('/api/v1/events/stream');
-   events.addEventListener('step.snapshot',e=>{setSteps(JSON.parse(e.data));setMessage('En línea')});
-   events.addEventListener('revenue.updated',e=>setRevenue(String(JSON.parse(e.data).total_bob)));
-   events.addEventListener('alert.created',e=>setAlarm('Alerta · '+JSON.parse(e.data).tipo));
-   events.onerror=()=>setMessage('Reconectando con la caseta…');
-   return ()=>events.close();
+   let events:EventSource;
+   function connect(){
+     events?.close();
+     events=new EventSource('/api/v1/events/stream');
+     events.addEventListener('step.snapshot',e=>{setSteps(JSON.parse(e.data));setMessage('En línea')});
+     events.addEventListener('revenue.updated',e=>setRevenue(String(JSON.parse(e.data).total_bob)));
+     events.addEventListener('alert.snapshot',e=>{const latest=JSON.parse(e.data)[0];setAlarm(latest?'Alerta · '+latest.tipo:'')});
+     events.addEventListener('alert.created',e=>setAlarm('Alerta · '+JSON.parse(e.data).tipo));
+     events.onerror=()=>setMessage('Reconectando con la caseta…');
+   }
+   function resume(){if(!document.hidden)connect()}
+   connect();
+   window.addEventListener('online',resume);
+   document.addEventListener('visibilitychange',resume);
+   return ()=>{events.close();window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume)};
+
  },[active]);
  async function login(){
   try{
