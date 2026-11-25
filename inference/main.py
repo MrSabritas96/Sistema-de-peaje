@@ -96,17 +96,30 @@ def predict(file:UploadFile=File(),plate_only:bool=False):
         from .ocr import read_plate
         detector=models["m1"]
         boxes=detector.boxes(frame) if hasattr(detector,"boxes") else detector(frame,verbose=False)[0].boxes.xyxy.int().tolist()
+        if not boxes and hasattr(detector,"boxes") and max(frame.shape[:2])>=800:
+            # Overlapping quadrants preserve detail when the plate is tiny in a still photo.
+            h,w=frame.shape[:2]
+            for top in (0,h*2//5):
+                for left in (0,w*2//5):
+                    roi=frame[top:top+(3*h+4)//5,left:left+(3*w+4)//5]
+                    boxes.extend((a+left,t+top,c+left,b+top) for a,t,c,b in detector.boxes(roi))
         patches=[frame[t:b,a:c] for a,t,c,b in sorted(boxes,key=lambda q:(q[2]-q[0])*(q[3]-q[1]),reverse=True)[:3]]
         if not patches or 1.3<=frame.shape[1]/frame.shape[0]<=4:
             patches.append(frame)
         for patch in patches:
-            readings=[class_ocr.read(patch)] if class_ocr else []
-            if not readings or not re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",readings[0]["texto"]):
-                readings+=read_plate(reader,patch)
+            if not patch.size:
+                continue
+            readings=read_plate(reader,patch)
+            if class_ocr:
+                readings.append(class_ocr.read(patch))
+            votes={}
             for reading in readings:
-                if reading["confianza"]>=0.6 and re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",reading["texto"]):
-                    result.update(plate=reading["texto"],ocr_confidence=reading["confianza"])
-                    break
+                value=reading["texto"]
+                if reading["confianza"]>=0.6 and re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",value):
+                    votes.setdefault(value,[]).append(reading["confianza"])
+            if votes:
+                value=max(votes,key=lambda v:(len(votes[v]),max(votes[v])))
+                result.update(plate=value,plate_raw=value,ocr_confidence=max(votes[value]))
             if result["plate"]:
                 break
         result["latency_ms"]=round(1000*(time.monotonic()-start))
