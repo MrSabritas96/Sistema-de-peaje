@@ -122,8 +122,6 @@ def lookup(placa:str,account=Depends(user)):
 def annotated(raw, result, limit=1200):
     with Image.open(io.BytesIO(raw)) as source:
         image = ImageOps.exif_transpose(source).convert("RGB")
-    if result.get("pasajeros") is not None or any(i.get("category")=="persona" for i in result.get("instances",[])):
-        image=Image.new("RGB",image.size,(20,36,48))
     w,h=image.size
     image.thumbnail((limit,limit))
     sx,sy=image.width/w,image.height/h
@@ -137,7 +135,7 @@ def annotated(raw, result, limit=1200):
         color=colors.get(name,(60,100,120))
         points=[(x*sx,y*sy) for x,y in item["polygon"]]
         if len(points)>=3:
-            draw.polygon(points,fill=(*color,62),outline=(*color,255),width=2)
+            draw.polygon(points,fill=(*color,255 if name=="persona" else 62),outline=(*color,255),width=2)
         a,b,c,d=item["box"]; a,b,c,d=a*sx,b*sy,c*sx,d*sy
         draw.rectangle((a,b,c,d),outline=(*color,255),width=2)
         label=f"{name} {item['confidence']:.2f}"
@@ -244,11 +242,14 @@ async def frame(file:UploadFile=File(),caseta:int=Form(),sentido:Literal["ENTRAD
     if sentido=="AUTO":
         sentido=motion_direction((account[0],caseta,sesion),result)
     result["direction"]=sentido or "Siguiendo"
+    with Image.open(io.BytesIO(raw)) as source:
+        width,height=ImageOps.exif_transpose(source).size
+    overlay={"width":width,"height":height,"objects":[{"box":item["box"],"label":item["category"],"score":item["confidence"]} for item in result.get("instances",[])]}
     preview_image=base64.b64encode(annotated(raw,result,480)).decode() if preview else None
     if not sentido:
-        return {"estado":"Esperando movimiento lateral","preview":preview_image}
+        return {"estado":"Esperando movimiento lateral","preview":preview_image,"overlay":overlay}
     if not any(result.get(k) for k in ("vehicle_category","vehicle_polygon","plate_bbox","axle_keypoints")):
-        return {"estado":"Buscando vehículo","preview":preview_image}
+        return {"estado":"Buscando vehículo","preview":preview_image,"overlay":overlay}
     with Image.open(io.BytesIO(raw)) as image:
         grey=ImageOps.exif_transpose(image).convert("L").resize((9,8),Image.Resampling.LANCZOS)
         result["visual_hash"]="".join("1" if grey.getpixel((x,y))>grey.getpixel((x+1,y)) else "0" for y in range(8) for x in range(8))
@@ -258,7 +259,7 @@ async def frame(file:UploadFile=File(),caseta:int=Form(),sentido:Literal["ENTRAD
             target=ImageOps.exif_transpose(image).crop((min(xs),min(ys),max(xs)+1,max(ys)+1)).convert("L").resize((9,8),Image.Resampling.LANCZOS)
             result["vehicle_hash"]="".join("1" if target.getpixel((x,y))>target.getpixel((x+1,y)) else "0" for y in range(8) for x in range(8))
     try:
-        return dict(register(result,caseta,sentido,account[0],sesion,digest,lambda:(evidence/(digest+".jpg")).write_bytes(raw)),preview=preview_image)
+        return dict(register(result,caseta,sentido,account[0],sesion,digest,lambda:(evidence/(digest+".jpg")).write_bytes(raw)),preview=preview_image,overlay=overlay)
     except ValueError as exc:
         raise HTTPException(422,str(exc))
 
@@ -370,8 +371,14 @@ def save_member(v:Member,account=Depends(admin)):
 
 
 @app.get(prefix+"/admin/{resource}",dependencies=[Depends(admin)])
-def catalog(resource:Literal["vehiculos","tarifas","casetas","usuarios"]):
+def catalog(resource:Literal["vehiculos","tarifas","casetas","usuarios","observados"]):
     with db.connect() as conn:
+        if resource=="observados":
+            return query(conn,"""SELECT DISTINCT ON (p.placa) p.placa,p.categoria,p.ejes,p.fecha,p.estado
+                FROM pasos p WHERE NULLIF(p.placa,'') IS NOT NULL AND p.ocultado_en IS NULL
+                ORDER BY p.placa,p.fecha DESC LIMIT 500""").mappings().all()
+        if resource=="vehiculos":
+            return query(conn,"SELECT placa,categoria,ejes,saldo,propietario FROM vehiculos WHERE activo AND NOT is_demo ORDER BY placa LIMIT 500").mappings().all()
         return query(conn,f"SELECT * FROM {resource} ORDER BY 1 LIMIT 500").mappings().all()
 
 

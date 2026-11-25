@@ -410,7 +410,8 @@
                 "vehiculos",
                 "tarifas",
                 "casetas",
-                "usuarios"
+                "usuarios",
+                "observados"
               ],
               "type": "string",
               "title": "Resource"
