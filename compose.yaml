@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: peaje
+      POSTGRES_USER: peaje
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U peaje -d peaje"]
+      interval: 5s
+      retries: 12
+      timeout: 3s
+  api:
+    build: {context: ., dockerfile: api/Dockerfile}
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql+psycopg://peaje:${POSTGRES_PASSWORD}@db/peaje
+      JWT_SECRET: ${JWT_SECRET:?}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase
+      QWEN_BASE_URL: ${QWEN_BASE_URL:-}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      EVIDENCE_DIR: /data/evidencias
+      INFERENCE_URL: ${INFERENCE_URL:-}
+      INFERENCE_API_KEY: ${INFERENCE_API_KEY:-}
+    volumes: ["evidencias:/data/evidencias","./security/backups:/backups:ro"]
+    secrets: [firebase]
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        NEXT_PUBLIC_FIREBASE_APP_ID: ${NEXT_PUBLIC_FIREBASE_APP_ID:-}
+        NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY:?}
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:?}
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID:?}
+    restart: unless-stopped
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment: {DOMAIN: "${DOMAIN:?}"}
+    ports: ["80:80","443:443"]
+    volumes: ["./deployment/Caddyfile:/etc/caddy/Caddyfile:ro","tls:/data"]
+volumes: {db: {}, evidencias: {}, tls: {}}
+secrets:
+  firebase: {file: "${FIREBASE_ADMIN_FILE:?}"}
+

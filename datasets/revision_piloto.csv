@@ -1,0 +1,9 @@
+archivo,objetivo,ruedas_lado_visibles,ejes_verificables,observacion
+photo_100_2026-11-25_10-13-04.jpg,minibus,2,2,Dos centros visibles en el mismo lado
+photo_11_2026-11-25_10-14-22.jpg,minibus,2,2,Dos centros visibles con vista oblicua
+photo_14_2026-11-25_10-13-04.jpg,minibus,2,2,Rueda trasera cercana a otro vehiculo
+photo_16_2026-11-25_10-14-08.jpg,camion,2,,Furgon oblicuo y encuadre parcial verificar en imagen completa
+photo_18_2026-11-25_10-14-22.jpg,auto,2,,Rueda delantera cortada por el borde inferior
+photo_20_2026-11-25_10-13-04.jpg,camioneta,2,2,Pickup de dos ejes confirmar categoria tarifaria
+photo_22_2026-11-25_10-14-08.jpg,minibus,1,,Tren delantero fuera del recorte
+photo_24_2026-11-25_10-14-22.jpg,minibus,0,,Ruedas ocultas por otro vehiculo

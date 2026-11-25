@@ -1,0 +1,9 @@
+easyocr==1.7.2
+fastapi==0.115.12
+onnxruntime==1.20.1
+opencv-python==5.1.0.95
+python-multipart==0.0.20
+torch==2.8.0+cu128
+torchvision==0.23.0+cu128
+ultralytics==8.3.161
+uvicorn==0.34.2

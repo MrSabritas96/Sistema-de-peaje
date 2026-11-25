@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/.next
+datos_locales
+.env
+*.zip
+**/__pycache__
+security/backups
+**/.env.local

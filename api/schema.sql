@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS usuarios(email text PRIMARY KEY, rol text NOT NULL CHECK(rol IN ('ADMIN','OPERADOR')), activo boolean NOT NULL DEFAULT true);
+CREATE TABLE IF NOT EXISTS vehiculos(placa text PRIMARY KEY,categoria text NOT NULL,saldo numeric(12,2) NOT NULL CHECK(saldo>=0),is_demo boolean NOT NULL DEFAULT false);
+CREATE TABLE IF NOT EXISTS casetas(id integer PRIMARY KEY,nombre text NOT NULL,origen text NOT NULL,destino text NOT NULL);
+CREATE TABLE IF NOT EXISTS tarifas(categoria text,ejes integer CHECK(ejes BETWEEN 2 AND 8),monto numeric(12,2) NOT NULL CHECK(monto>=0),PRIMARY KEY(categoria,ejes));
+CREATE TABLE IF NOT EXISTS pasos(id bigserial PRIMARY KEY, fecha timestamptz NOT NULL DEFAULT clock_timestamp(), placa text, categoria text,ejes integer,monto numeric(12,2), saldo_anterior numeric(12,2),saldo_posterior numeric(12,2), estado text NOT NULL,caseta integer REFERENCES casetas, sentido text NOT NULL, origen text NOT NULL,destino text NOT NULL,operador text REFERENCES usuarios,evidencia text NOT NULL);
+CREATE INDEX IF NOT EXISTS pasos_busqueda ON pasos(caseta,sentido,placa,fecha DESC);
+CREATE TABLE IF NOT EXISTS detecciones(id bigserial PRIMARY KEY,fecha timestamptz NOT NULL DEFAULT clock_timestamp(), paso bigint REFERENCES pasos,operador text REFERENCES usuarios,caseta integer REFERENCES casetas,sentido text NOT NULL,sesion text NOT NULL,evidencia text NOT NULL,resultado jsonb NOT NULL,duplicada boolean NOT NULL);
+CREATE INDEX IF NOT EXISTS detecciones_foto ON detecciones(caseta,sentido,sesion,evidencia,fecha DESC);
+CREATE TABLE IF NOT EXISTS alertas(id bigserial PRIMARY KEY,paso bigint REFERENCES pasos,tipo text NOT NULL,atendida boolean NOT NULL DEFAULT false);
+INSERT INTO usuarios VALUES ('doc.alvaro.pinto.ma@unifranz.edu.bo','ADMIN',true) ON CONFLICT DO NOTHING;
+INSERT INTO casetas VALUES (1,'Caseta DEMO','La Paz','El Alto') ON CONFLICT DO NOTHING;
+INSERT INTO vehiculos SELECT (8000+i)::text||'TST',(ARRAY['moto','auto','minibus','camion','bus'])[1+(i-1)%5],CASE WHEN i%4=0 THEN 5 ELSE 100 END,true FROM generate_series(1,20) i ON CONFLICT DO NOTHING;
+INSERT INTO tarifas SELECT c,e,10*e FROM unnest(ARRAY['moto','auto','minibus','camion','bus']) c CROSS JOIN generate_series(2,8) e ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS auditoria(id bigserial PRIMARY KEY,fecha timestamptz NOT NULL DEFAULT clock_timestamp(),usuario text REFERENCES usuarios,entidad text NOT NULL,entidad_id bigint NOT NULL,antes jsonb NOT NULL,despues jsonb NOT NULL,motivo text NOT NULL);

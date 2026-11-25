@@ -1,0 +1,755 @@
+ESPECIFICACIÓN MAESTRA
+Sistema Inteligentede Control de Peaje
+Documento de requisitos, arquitectura y órdenes de implementación para Antigravity
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LABORATORIO FINAL DE HITO
+Entrega indicada en la consigna: 25 de noviembre de 2026
+Versión 1.0  |  Fecha de preparación: 24 de noviembre de 2026
+PROPÓSITO
+Este documento reúne la consigna escrita del laboratorio y los requisitos adicionales explicados por el docente en el audio. Debe entregarse completo a Antigravity como especificación principal. La IA debe implementar, probar y desplegar; no debe limitarse a proponer un plan ni simular resultados.
+
+Una arquitectura definida. Una sola ruta de implementación. Ningún servicio local en la demostración.
+
+Índice de trabajo
+1. Cómo debe utilizarse este documento  Leer antes de modificar el proyecto.
+2. Requisitos consolidados y contradicciones resueltas  Qué es obligatorio y qué decisión se adopta.
+3. Tecnologías definitivas  Herramientas escogidas y motivo.
+4. Arquitectura general y flujo completo  Cómo se comunican teléfono, VPS, modelos y agente.
+5. Modelos de visión por computadora  M1 placas/OCR, M2 segmentación y M3 keypoints.
+6. Reglas del peaje y base de datos  Tarifas, ejes, saldos, pasos y alertas.
+7. Aplicación móvil Android  Modo Caseta y Modo Consulta.
+8. Aplicación web  Panel, CRUD, historial y operaciones.
+9. Autenticación, API y tiempo real  Google, lista blanca, JWT y SSE.
+10. Agente conversacional Qwen  Consultas verificadas por texto e imagen.
+11. Infraestructura, despliegue y seguridad  VPS, dominio, HTTPS, RunPod y secretos.
+12. Organización del repositorio y entregables  Git, Drive, APK, informe y video.
+13. Puntos adicionales  Entornos, RunPod, pasajeros y hardware.
+14. Plan de ejecución priorizado  Orden estricto para Antigravity.
+15. Pruebas de aceptación  Cómo comprobar que realmente funciona.
+16. Prompt inicial para Antigravity  Instrucción lista para iniciar el trabajo.
+17. Referencias oficiales y notas de costos  Enlaces de configuración y precios consultados.
+IMPORTANTE PARA EL PLAZO
+La consigna indica entrega el 25/11/2026. Entrenar modelos propios, anotar datasets, configurar cuentas externas, desplegar infraestructura y probar móviles en menos de un día puede no ser viable si los recursos aún no existen. La IA debe trabajar por prioridades, informar bloqueos reales y nunca declarar como terminado algo que no fue probado.
+
+
+1. Cómo debe utilizarse este documento
+Este archivo es la especificación central del proyecto. Se debe adjuntar o abrir en Antigravity dentro del espacio de trabajo del proyecto. A continuación, se debe enviar el prompt de la sección 16.
+Antigravity debe inspeccionar primero todos los archivos del repositorio, notebooks anteriores, pesos .pt, datasets, configuraciones y cualquier código existente. Debe reutilizar lo que funcione.
+No debe borrar ni reescribir todo el proyecto por comodidad. Debe realizar cambios incrementales, conservar los pesos disponibles y documentar los cambios.
+No debe elegir otras tecnologías ni crear alternativas paralelas. La sección 3 fija la pila técnica.
+No debe detenerse después de generar archivos. Debe instalar dependencias en entornos de nube, ejecutar pruebas, corregir errores y desplegar hasta donde las credenciales y servicios autorizados lo permitan.
+Cuando falte una cuenta, clave, dominio, peso o dataset, debe continuar el resto del trabajo y entregar una lista exacta de lo que falta, sin fabricar valores ni bloquear toda la implementación.
+Cualquier operación que genere un cobro, compre un dominio, renueve un plan, cree recursos facturables o destruya datos requiere autorización expresa del usuario. La IA no debe comprar nada por su cuenta.
+REGLA DE VERDAD
+No crear detecciones ficticias para aparentar IA. Los datos de prueba deben estar marcados como DEMO. Si falta un modelo, el endpoint debe informar MODEL_NOT_READY y explicar cuál peso falta. Las métricas deben proceder de evaluaciones reales.
+
+2. Requisitos consolidados y contradicciones resueltas
+La consigna escrita se toma como base formal. El audio agrega detalles operativos que se incorporan. Cuando ambos se contradicen, se implementa el requisito más estricto para evitar perder puntos.
+Tema
+Diferencia o detalle
+Decisión obligatoria
+Autenticación móvil
+En el audio se sugiere que podría ser opcional; la consigna escrita exige Google en web y móvil.
+Implementar Google Sign-In en ambas aplicaciones.
+Agente con imágenes
+En el audio se sugiere que aceptar imágenes podría ser opcional. La consigna exige consulta por texto e imagen y el video debe mostrar ambas.
+Implementar las dos modalidades.
+Categorías de vehículos
+El audio menciona al menos tres categorías y da ejemplos. La consigna escrita enumera cinco.
+Implementar moto, auto, minibús, camión y bus.
+Base de datos
+Se permite modelo relacional o documental.
+PostgreSQL relacional, porque existen relaciones y saldos/transacciones.
+Inferencia
+Se permite Colab o RunPod. La bonificación exige RunPod durante la demostración.
+Entrenar en Colab y ejecutar inferencia final en un Pod de RunPod.
+Publicación
+El audio y la consigna prohíben depender del equipo local.
+Web/API/BD en VPS público; modelos en RunPod; APK en teléfono real.
+Dirección del paso
+El audio explica entradas, salidas, origen y destino.
+Guardar sentido, origen, destino y caseta en cada paso.
+Agente conversacional
+El audio menciona Qwen/LLM y el texto permite function calling.
+Qwen conectado a funciones que consultan la API/BD; nunca acceso SQL libre.
+Administrador docente
+La consigna escrita identifica un correo específico.
+Crear de antemano doc.alvaro.pinto.ma@unifranz.edu.bo como administrador.
+20 vehículos
+La consigna exige al menos 20 vehículos de prueba.
+Crear 20 registros DEMO al inicializar la base de datos.
+Puntos adicionales
+Opcionales individualmente; obligatorios si se trabaja en grupo, según la consigna.
+Preparar las cuatro bonificaciones; no declarar hardware completado sin dispositivo físico.
+
+CORREO DEL DOCENTE
+Usar exactamente doc.alvaro.pinto.ma@unifranz.edu.bo como cuenta inicial de administrador porque es el correo que aparece en la consigna escrita. El audio tiene una transcripción poco clara en esa parte. Si Moodle publica un segundo correo o corrige el dato, agregarlo a la lista blanca sin eliminar el primero hasta verificarlo.
+
+2.1 Qué debe hacer el sistema
+Identificar una placa boliviana en video/fotogramas capturados por un teléfono Android.
+Clasificar cada vehículo en cinco clases: moto, auto, minibús, camión o bus.
+Estimar ejes a partir de keypoints de ruedas visibles. No asumir un eje si el modelo no lo detecta.
+Calcular el monto con la tabla de tarifas configurable; descontar saldo solo cuando la placa esté registrada y el saldo sea suficiente.
+Registrar evidencia, fecha/hora, caseta, sentido, origen, destino, categoría, ejes, tarifa, estado y operador.
+Mostrar cada paso y cada alerta inmediatamente en el panel web, sin recarga.
+Responder consultas conversacionales por texto e imagen usando únicamente datos recuperados de la base de datos/API.
+Permitir administrar placas/vehículos, tarifas, casetas, usuarios autorizados, historial y alertas.
+3. Tecnologías definitivas
+No sustituir esta selección por otra pila. Las versiones exactas deben fijarse en los archivos de dependencias después de comprobar compatibilidad entre sí; utilizar versiones estables, no betas ni nightly.
+Capa
+Elección única
+Uso
+Servidor y dominio
+Hostinger VPS KVM 2, Ubuntu 24.04 LTS; dominio .com; DNS en Cloudflare.
+8 GB RAM/2 vCPU/100 GB NVMe; hosting compartido no sirve para esta arquitectura completa.
+Contenedores y HTTPS
+Docker Engine + Docker Compose + Caddy.
+Caddy termina TLS y enruta web/API; renovación automática de certificados.
+Web
+Next.js + React + TypeScript.
+Panel administrativo responsive, servido por el VPS.
+Backend
+Python 3.11 + FastAPI + Pydantic + SQLAlchemy 2 + Alembic.
+API REST, validación, lógica de negocio, agente y conexión a modelos.
+Base de datos
+PostgreSQL 16.
+Persistencia de usuarios, vehículos, tarifas, casetas, pasos, detecciones y alertas.
+Tiempo real
+Server-Sent Events (SSE) desde FastAPI.
+Actualización inmediata del panel y reconexión automática; usar cookies seguras en web.
+Móvil
+React Native con Expo + TypeScript + expo-camera.
+Una aplicación Android con Modo Caseta y Modo Consulta. Construcción APK mediante EAS Build.
+Identidad
+Firebase Authentication con proveedor Google habilitado; Firebase Admin SDK en backend.
+Google en web y Android; lista blanca y roles almacenados en PostgreSQL.
+Modelos
+Ultralytics YOLO11: M1 detector de placas existente; M2 YOLO11-seg; M3 YOLO11-pose.
+M1 se reutiliza; M2 y M3 se entrenan con datasets etiquetados propios en Roboflow/Colab.
+OCR
+EasyOCR 1.7.x, idioma inglés/alfa-numérico, sobre el recorte de M1.
+Leer caracteres latinos y validar formato boliviano; mantener confianza OCR.
+Datos/entrenamiento
+Roboflow Free + Google Colab.
+Etiquetado de máscaras/keypoints y entrenamiento remoto.
+Inferencia
+RunPod Pod con NVIDIA RTX 3090 de 24 GB, FastAPI, puerto HTTP 8000.
+Un solo endpoint externo para M1+OCR, M2 y M3.
+Agente
+Alibaba Cloud Model Studio, modelo Qwen3.5-Plus, API compatible con OpenAI, región Virginia (us-east-1).
+Function calling limitado a funciones del backend.
+Repositorio
+GitHub.
+Repositorio público o compartido con el docente; sin secretos ni datos sensibles.
+Evidencias
+Google Drive.
+Video, PDF, APK, capturas y exportación de API.
+
+3.1 Por qué no se usará hosting compartido
+La aplicación escogida usa Next.js, FastAPI, PostgreSQL, Docker y procesos persistentes para SSE. Un hosting compartido PHP no es la opción adecuada para ejecutar y supervisar todos estos servicios en el mismo servidor. Por eso se fija un VPS.
+3.2 Laptop ASUS ROG Strix G16
+La configuración exacta del equipo no fue proporcionada. Antigravity no debe asumir modelo de GPU, cantidad de VRAM ni RAM. La laptop se utiliza para editar código, acceder al navegador/SSH y revisar el proyecto. El entrenamiento va en Colab y la inferencia final en RunPod. No se debe depender de la GPU de la laptop para la demostración ni publicar servicios desde ella.
+4. Arquitectura general y flujo completo
+4.1 Componentes desplegados
+Componente
+Dónde corre
+Responsabilidad
+Aplicación web Next.js
+Hostinger VPS
+Dashboard, CRUD, historial, chat y administración.
+API FastAPI
+Hostinger VPS
+Autenticación, reglas del peaje, base de datos, alertas, chat y envío a inferencia.
+PostgreSQL
+Hostinger VPS, red interna Docker
+Datos persistentes; no publicar el puerto 5432 a Internet.
+Caddy
+Hostinger VPS
+HTTPS, proxy inverso y rutas públicas.
+Inferencia FastAPI
+RunPod RTX 3090
+Un endpoint único con los tres modelos y OCR.
+Qwen API
+Alibaba Cloud Model Studio
+Comprender preguntas y redactar respuesta a partir de resultados de herramientas.
+Firebase Auth
+Servicio Google/Firebase
+Inicio de sesión con Google y verificación de ID tokens.
+App Android
+Teléfono físico
+Capturar frames y consultar el sistema usando HTTPS.
+Colab/Roboflow
+Nube
+Etiquetado, notebooks y entrenamiento. No es el servidor final de inferencia.
+
+4.2 Flujo de un vehículo
+El operador inicia sesión con Google en la app Android y selecciona la caseta y el sentido de circulación (ENTRADA o SALIDA).
+En Modo Caseta, el teléfono muestra la cámara y captura un fotograma cada 500 ms aproximadamente (2 FPS). No se envía cada frame a máxima resolución: redimensionar y comprimir JPEG de forma razonable.
+La app envía el frame por HTTPS a POST /api/v1/pasos/frame en el VPS con caseta, sentido, token y un identificador de sesión.
+FastAPI valida el token, registra una detección y reenvía el frame al endpoint único de RunPod con INFERENCE_API_KEY.
+RunPod ejecuta M1 + OCR, M2 y M3; devuelve placa, confianza, categoría, ejes, keypoints y latencia.
+FastAPI aplica deduplicación, consulta tarifa/vehículo/saldo, calcula el monto y decide el estado. Si no hay confianza suficiente, marca REVISIÓN_MANUAL y no realiza cobro automático.
+FastAPI guarda paso/evidencia/alerta y, si procede, descuenta saldo dentro de una transacción atómica.
+FastAPI emite evento SSE. El panel web muestra paso, imagen, datos, importe, estado y hora sin recargar.
+La app móvil recibe el resultado y lo muestra al operador.
+REGLA CRÍTICA DE DUPLICADOS
+Como la app envía 2 frames por segundo, no se debe guardar cada frame como un paso distinto. Implementar deduplicación por placa + caseta + sentido con una ventana configurable inicial de 45 segundos. Si la placa no se lee, usar hash de imagen/sesión y una ventana corta. Nunca bloquear un paso real solo por duplicación sin dejar registro de la detección.
+
+4.3 Actualización en tiempo real
+Usar SSE (Server-Sent Events) en GET /api/v1/events/stream. Emitir eventos step.created, alert.created, step.updated y revenue.updated. El navegador se conecta desde el mismo dominio y usa una cookie de sesión HttpOnly para que EventSource no necesite un header Authorization personalizado. Enviar heartbeat cada 20 segundos y permitir reconexión. Caddy debe desactivar buffering para la ruta SSE.
+5. Modelos de visión por computadora
+NO CONFUNDIR LAS TRES TAREAS
+M1 identifica la placa y lee sus caracteres. M2 clasifica el vehículo y genera máscara de instancia. M3 identifica centros de ruedas visibles mediante keypoints y estima ejes. No sustituir M3 por una regla basada únicamente en el tamaño del vehículo.
+
+5.1 M1 — Detección de placa boliviana + OCR
+Primero buscar en el repositorio los pesos, notebook, dataset y configuración del detector de placas ya trabajado en clases. Reutilizar el archivo de pesos que funcione; no reemplazarlo por un modelo aleatorio.
+El detector localiza la placa y devuelve una caja delimitadora. Recortar la placa con margen y corregir perspectiva si el recorte lo permite.
+Aplicar EasyOCR al recorte. Probar rotación/contraste solo cuando sea necesario; no modificar el texto sin dejar trazabilidad.
+Normalizar: mayúsculas y eliminar espacios/guiones. Validar de forma inicial 3 o 4 dígitos seguidos de 3 letras (formatos ordinarios de placa PTA). El recuadro departamental separado no forma parte de la matrícula principal.
+Guardar texto original, placa normalizada, confianza OCR, caja de placa y, cuando sea posible, imagen de evidencia.
+Cuando la confianza sea baja, marcar REVISION_MANUAL y permitir que el operador corrija el texto antes de cobrar.
+Validación de caracteres ambiguos: implementar sugerencias ponderadas O↔0, I↔1, B↔8, S↔5 y 3↔8, tal como se comentó en clase. La sustitución debe respetar la posición numérica/alfabética. No transformar silenciosamente una placa: sugerir coincidencias y pedir confirmación.
+5.2 M2 — Segmentación de instancias y clase
+Arquitectura: YOLO11n-seg (Ultralytics), transferencia desde pesos preentrenados y ajuste fino con dataset propio etiquetado en Roboflow.
+Clases obligatorias: moto, auto, minibús, camión y bus. Mantener exactamente los mismos nombres/índices en Roboflow, data.yaml, modelo, backend y frontend.
+Cada vehículo debe disponer de su propia máscara y confianza de clase. La categoría sirve para seleccionar la tarifa, no para adivinar ejes.
+Dataset: incluir fotos propias añadidas por el estudiante y, si es necesario, material de Roboflow Universe como complemento. Registrar fuente, cantidad propia, cantidad externa, partición train/valid/test y aumentaciones.
+Inspeccionar visualmente las anotaciones y corregir máscaras mal cerradas, etiquetas cruzadas y fuga de imágenes entre train/val/test.
+5.3 M3 — Keypoints de ruedas para estimar ejes
+Arquitectura: YOLO11n-pose personalizado, inicializado con pesos preentrenados y ajustado con keypoints propios.
+La cámara para el conteo debe captar el vehículo de perfil/lateral. Se marca un punto en el centro de cada rueda visible del lado observado; en esa vista, una rueda visible representa el eje correspondiente.
+Un objeto vehículo tendrá hasta 8 posiciones de keypoint ordenadas de adelante hacia atrás. Declarar kpt_shape [8, 3]. Los puntos inexistentes/no etiquetados se marcan como no visibles según el formato YOLO Pose. Mantener el mismo orden para todas las imágenes.
+Contar únicamente keypoints predichos con confianza superior al umbral validado. No contar dos veces el mismo eje por ruedas de ambos lados. El conteo inicial mínimo permitido es 2 ejes.
+Si un camión está parcialmente oculto o no hay perfil suficiente, no inventar el número: devolver ejes=null y marcar REVISIÓN_MANUAL.
+El número de keypoints debe evaluarse frente al número real de ejes anotados. Reportar exactitud de conteo y MAE (error absoluto medio).
+LIMITACIÓN FÍSICA IMPORTANTE
+Un video frontal, muy oblicuo, nocturno o con ruedas tapadas no permite contar ejes con fiabilidad. El video de prueba debe incluir vehículos de perfil, buena luz, cámara estable y ruedas visibles. Si el docente usa otro ángulo, mostrar el caso como limitación/ revisión manual, no como resultado garantizado.
+
+5.4 Un único endpoint de inferencia en RunPod
+RunPod debe ejecutar un servicio FastAPI que cargue una sola vez los tres modelos al iniciar. No crear tres servicios separados ni cargar pesos en cada petición. El endpoint público es el proxy HTTPS de RunPod y la web API lo consume de forma privada mediante una clave de aplicación.
+POST /predict
+Header: X-Inference-Key: ${INFERENCE_API_KEY}
+Body: multipart/form-data, file=<frame.jpg>
+ 
+Respuesta JSON esperada:
+{
+ "plate":"1234ABC", "plate_raw":"1234 ABC",
+ "ocr_confidence":0.94, "plate_bbox":[x1,y1,x2,y2],
+ "vehicle_category":"camion", "category_confidence":0.91,
+ "axles":3, "axle_keypoints":[{"x":0.2,"y":0.7,"confidence":0.88}],
+ "passengers":null, "latency_ms":420 }
+
+Crear GET /health que devuelva estado de carga de cada modelo, VRAM disponible, versiones y uptime. Si falta algún peso, informar model_ready=false y nombre del modelo faltante.
+El servicio debe escuchar en 0.0.0.0:8000. Exponer el puerto HTTP 8000 en la configuración del Pod. El proxy de RunPod será HTTPS y la aplicación debe validar una clave en cada request.
+No dejar el endpoint de inferencia sin protección: el proxy de RunPod es público. No confiar en que la URL del Pod sea un secreto.
+Mantener cada inferencia acotada a una imagen y responder con rapidez; si una tarea excede el timeout del proxy, reducir tamaño/tiempo de procesamiento y evitar operaciones largas sincrónicas.
+5.5 Métricas reales
+Parte
+Métricas mínimas a registrar
+No hacer
+M1 + OCR
+Precisión exacta de placa (cadena completa), exactitud por carácter y confianza OCR en conjunto de prueba.
+No reportar una precisión calculada sobre 2 o 3 fotos como si fuera general.
+M2
+Precision, Recall, mAP50 y mAP50-95; resultados por clase.
+No copiar métricas del modelo preentrenado como resultado propio.
+M3
+Precision/Recall de keypoints, error de conteo, exactitud exacta de ejes y MAE.
+No equiparar cada rueda visible de ambos lados con un eje sin regla.
+Sistema completo
+Latencia de inferencia y latencia total p50/p95; tasa de errores; duplicados bloqueados.
+No publicar latencia estimada como medida observada.
+
+6. Reglas del peaje y base de datos
+6.1 Reglas de cálculo y registro
+El monto se obtiene de tarifas[categoria, ejes]. La aplicación no debe inventar un monto cuando falte la combinación: marcar TARIFA_NO_CONFIGURADA y permitir que el administrador la configure.
+Para datos de prueba se puede cargar el ejemplo oral de 10 Bs por eje (2 ejes = 20 Bs; 3 ejes = 30 Bs). Indicar en la interfaz que es una tarifa ilustrativa y editable, no una tarifa oficial de Bolivia.
+Guardar si el paso corresponde a ENTRADA o SALIDA. La caseta debe poder tener nombre, ubicación, origen y destino. Guardar origen y destino usados al momento del paso, para conservar el historial si la caseta cambia de configuración.
+Si la placa existe y el saldo es suficiente: registrar monto, descontar saldo dentro de transacción SQL y marcar PAGADO.
+Si la placa existe pero el saldo no alcanza: registrar paso, no descontar saldo, estado SIN_SALDO y generar alerta en tiempo real.
+Si la placa fue detectada pero no está registrada: registrar el paso como IDENTIFICADA_NO_REGISTRADA y crear alerta de posible evasión. No descontar saldo.
+Si no hay placa legible: guardar la detección como SIN_PLACA o ERROR_OCR; no cobrar; crear alerta de revisión si corresponde.
+Si la confianza OCR o ejes no supera el umbral de validación, marcar REVISIÓN_MANUAL; no ejecutar débito automático hasta confirmación del operador.
+Si se corrige una detección manualmente, conservar valor original, valor corregido, usuario, fecha y motivo para auditoría.
+6.2 Tablas mínimas y ampliaciones necesarias
+Tabla
+Campos principales
+usuarios
+id, firebase_uid, email_google UNIQUE, nombre, rol (ADMIN/OPERADOR), activo, created_at.
+vehiculos
+id, placa UNIQUE, propietario, categoria, saldo NUMERIC, activo, is_demo, created_at.
+casetas
+id, nombre, ubicacion, origen, destino, activa, created_at.
+tarifas
+id, categoria, ejes, monto NUMERIC, moneda (BOB), activa, UNIQUE(categoria,ejes).
+pasos
+id, placa_leida, placa_normalizada, confianza_ocr, categoria_detectada, confianza_categoria, ejes_detectados, pasajeros NULLABLE, monto, saldo_anterior, saldo_posterior, caseta_id, usuario_id, sentido, origen, destino, imagen_url, estado, created_at, idempotency_key.
+detecciones
+id, caseta_id, usuario_id, placa_leida NULLABLE, confianza_ocr, categoria NULLABLE, ejes NULLABLE, imagen_url, error_codigo, sin_placa, inference_latency_ms, created_at.
+alertas
+id, paso_id NULLABLE, tipo, descripcion, atendida, atendida_por, created_at, attended_at.
+auditoria
+id, usuario_id, accion, entidad, entidad_id, antes_json, despues_json, ip, created_at.
+
+6.3 Datos iniciales
+Crear exactamente 20 o más vehículos DEMO mediante una migración/seed idempotente. No insertar los mismos 20 una y otra vez en cada reinicio.
+Usar placas sintéticas de prueba y marcar is_demo=true; mostrar una etiqueta DEMO y permitir limpiar los datos de demostración desde administración. No utilizar datos personales reales.
+Crear al menos una caseta demo y tarifas para las cinco categorías y varios números de ejes. Los montos se mantienen editables.
+Crear al docente como ADMIN en la lista blanca y crear una cuenta OPERADOR de prueba solo si el acceso se autoriza desde el panel.
+Los backups/exportaciones deben incluir esquema y datos. Implementar exportación segura de SQL comprimido/CSV desde administración; guardar los respaldos fuera del repositorio, en una ubicación de seguridad protegida en el servidor.
+7. Aplicación móvil Android
+Tecnología: React Native + Expo + TypeScript. La app debe ser una APK instalable, no una página web simulando cámara.
+7.1 Inicio de sesión
+Mostrar botón Continuar con Google. No crear contraseña propia ni un formulario email/password.
+Autenticar con Firebase Auth y obtener Firebase ID token. Intercambiarlo con POST /api/v1/auth/google; el backend comprueba lista blanca y devuelve token de sesión propio para llamadas móviles.
+Si la cuenta no está autorizada, mostrar acceso denegado y cerrar sesión. No permitir acceder a Modo Caseta o Consulta.
+7.2 Modo Caseta
+Solicitar permiso de cámara; mostrar vista previa en vertical/horizontal con selector de caseta y sentido ENTRADA/SALIDA.
+Iniciar/detener captura; capturar 2 FPS (intervalo inicial de 500 ms) mientras esté activado. Enviar fotogramas JPEG comprimidos, no transmisión de alta resolución sin límites.
+Consumir la API pública HTTPS del VPS; no usar direcciones localhost, IP privada ni un servidor que se ejecute en la laptop.
+Mostrar por cada resultado: imagen/miniatura, placa, confianza, categoría, ejes, monto, estado, hora y mensaje si requiere revisión manual.
+Incluir pausa, reintento de conexión, indicador de API/inferencia y límite de envío para no saturar el servicio.
+Usar `caseta_id`, `sentido`, `session_id` y `frame_id` para correlacionar envíos y evitar duplicados.
+7.3 Modo Consulta
+Campo de texto para escribir una placa y consultar estado/historial mediante el agente.
+Opción para tomar/seleccionar una foto de placa. La imagen pasa al backend y luego a M1+OCR; la app no debe implementar un modelo local.
+Mostrar el resultado conversacional y la coincidencia sugerida; permitir confirmar la placa propuesta cuando OCR tuvo confusión.
+7.4 APK
+Usar EAS Build en la nube para generar APK Android con perfil de distribución interna. Configurar package name estable, permisos de cámara, scheme de OAuth y variables de producción. Guardar el APK final en Drive. No entregar solamente Expo Go o un enlace de desarrollo.
+8. Aplicación web
+8.1 Páginas obligatorias
+Página
+Contenido/operaciones
+Login
+Inicio con Google; acceso denegado para cuentas fuera de lista blanca.
+Dashboard
+Pasos hoy, recaudación del día, vehículos detectados, alertas pendientes, estado de inferencia, últimos pasos y gráficos.
+Vehículos
+CRUD: crear, editar, activar/desactivar, buscar placa, propietario, categoría, saldo y lista de pasos.
+Pasos / Historial
+Tabla filtrable por placa, fecha, caseta, sentido, categoría, ejes, monto y estado; vista de evidencia.
+Casetas
+CRUD de casetas, ubicación, origen, destino y estado.
+Tarifas
+CRUD por categoría y ejes, monto en Bs; validación para que no existan combinaciones duplicadas.
+Alertas
+Lista en tiempo real de placa no registrada, sin saldo, sin placa, error OCR, tarifa faltante y revisión manual.
+Chat
+Agente conversacional por texto y foto con historial limitado de conversación.
+Usuarios
+Solo ADMIN: permitir/desactivar correos Google, asignar ADMIN/OPERADOR y revisar actividad.
+Estado del sistema
+Salud de PostgreSQL, API, SSE y RunPod; última inferencia, latencia y modelos cargados.
+Seguridad/Exportación
+Exportar base de datos/CSV, ver auditoría y ejecutar backup con permisos ADMIN.
+
+8.2 Interfaz y experiencia
+Diseño moderno, claro, profesional y responsive; priorizar lectura y operación, no efectos visuales pesados.
+Mostrar horas en zona America/La_Paz y moneda Bs (BOB). Guardar timestamps en UTC y convertir en interfaz.
+Utilizar estados visuales: PAGADO, SIN_SALDO, IDENTIFICADA_NO_REGISTRADA, SIN_PLACA, REVISIÓN_MANUAL y ERROR.
+El panel debe actualizar contadores, pasos y alertas mediante SSE; no usar refresco de página como solución de tiempo real.
+9. Autenticación, API y tiempo real
+9.1 Autenticación Google y lista blanca
+Crear proyecto Firebase/Google Cloud y habilitar Google como proveedor de Firebase Authentication.
+Configurar OAuth consent screen y clientes correspondientes para Web y Android. Añadir los orígenes HTTPS/redirects y el SHA-1 del certificado de firma EAS.
+Agregar el dominio real a Authorized Domains de Firebase Authentication.
+Configurar la cuenta docente doc.alvaro.pinto.ma@unifranz.edu.bo como usuario de prueba del consentimiento cuando el proyecto esté en Testing y como registro ADMIN en PostgreSQL.
+La API verifica la firma/validez del Firebase ID token con Firebase Admin SDK; comprueba que el email esté activo en users; devuelve JWT propio con rol y expiración.
+Cada endpoint protegido exige JWT. Las cuentas no autorizadas no se insertan automáticamente en la lista blanca.
+En desarrollo y producción no usar contraseña local. La lista blanca, el rol y el estado activo se controlan en PostgreSQL. El cliente móvil y web comparten el proyecto Firebase, pero cada plataforma tiene su configuración OAuth propia.
+9.2 Rutas API mínimas
+Método
+Ruta
+Descripción
+POST
+/api/v1/auth/google
+Intercambiar/verificar Firebase ID token; excepción pública controlada.
+POST
+/api/v1/pasos/frame
+Frame desde app; invoca inferencia, guarda paso/detección y emite SSE.
+POST
+/api/v1/placas/consultar
+Consulta por placa de texto.
+POST
+/api/v1/placas/consultar-imagen
+M1+OCR a partir de imagen y consulta de estado.
+GET
+/api/v1/placas/{placa}/historial
+Historial de pasos de una placa.
+GET
+/api/v1/casetas/{id}/resumen
+Conteo y recaudación del día.
+POST
+/api/v1/agente/chat
+Chat con tools de consulta.
+GET
+/api/v1/events/stream
+Flujo SSE de pasos/alertas/estadísticas.
+GET
+/api/v1/health
+Salud general de API y base de datos.
+GET
+/api/v1/inference/status
+Conectividad y estado de los tres modelos en RunPod.
+CRUD
+/api/v1/vehiculos
+Vehículos (ADMIN; lectura permitida a OPERADOR).
+CRUD
+/api/v1/casetas
+Casetas (ADMIN).
+CRUD
+/api/v1/tarifas
+Tarifas (ADMIN).
+CRUD
+/api/v1/usuarios
+Lista blanca y roles (solo ADMIN).
+GET/PATCH
+/api/v1/alertas
+Listado y atención de alertas.
+GET
+/api/v1/exportaciones
+Exportaciones protegidas (solo ADMIN).
+
+La API debe documentarse con Swagger/OpenAPI generado por FastAPI o una colección Postman. Todas las rutas, excepto la autenticación de entrada y health limitado, deben exigir sesión y validar el rol correspondiente.
+10. Agente conversacional Qwen
+Usar Qwen3.5-Plus mediante la API compatible con OpenAI de Alibaba Cloud Model Studio. El agente debe consultar herramientas del backend: el LLM no ejecuta SQL, no tiene credenciales de PostgreSQL y no inventa estados.
+10.1 Flujo del agente
+Recibir una pregunta en español y el user_id autenticado.
+Identificar intención: consulta de placa, historial, último paso, estado de una placa o aclaración de posible error OCR.
+Extraer y normalizar placa; si llega imagen, primero llamar M1+OCR y obtener texto/confianza.
+Usar function calling para ejecutar buscar_placa(placa), obtener_historial(placa) o buscar_coincidencias(placa). Las funciones llaman a servicios/repositorios internos que verifican permisos y consultan PostgreSQL.
+Entregar al modelo solo el JSON devuelto por las herramientas. Qwen redacta una respuesta breve y humana en español.
+Validar que la respuesta no agregue datos ausentes. Si falla Qwen, responder con una plantilla basada directamente en el resultado de la base de datos.
+10.2 Cuatro estados exactos
+Estado
+Condición
+Respuesta esperada
+REGISTRADA_Y_CON_PASO
+Vehículo existe y hay uno o más pasos.
+Indicar último paso/historial: fecha, hora, caseta, sentido, categoría, ejes, monto y estado.
+REGISTRADA_SIN_PASO
+Vehículo existe, pero nunca tiene pasos.
+Indicar que está registrada y todavía no se encuentra ningún paso.
+IDENTIFICADA_NO_REGISTRADA
+Hay una detección/paso con esa placa, pero no existe en vehículos.
+Indicar que la cámara la detectó, no está registrada y mostrar evidencia/fecha/caseta disponible.
+NO_EXISTE
+No aparece ni en vehículos ni en detecciones/pasos.
+Indicar que no hay ningún registro coincidente.
+
+10.3 Coincidencias OCR
+Comparar placa normalizada con las registradas y detecciones; usar Levenshtein/Damerau-Levenshtein y sustituciones probables O/0, I/1, B/8, S/5, 3/8.
+Si una coincidencia supera el umbral, preguntar “No encontré 1238ABC, pero sí 1233ABC. ¿Quisiste decir 1233ABC?”. Mostrar por qué coincide y no reemplazar sin confirmación.
+Si existen varias coincidencias posibles, mostrar máximo 3 sugerencias ordenadas por similitud, pero no elegir silenciosamente.
+No usar datos de Internet, conocimiento general ni respuestas del modelo para determinar si pasó un vehículo. Solo base de datos/API.
+10.4 Variables de configuración Qwen
+QWEN_BASE_URL=https://<WORKSPACE_ID>.us-east-1.maas.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen3.5-plus
+QWEN_API_KEY=<SECRET>
+
+La clave y el Workspace ID se configuran en el servidor, no se escriben en el código ni en Git. El endpoint regional y la clave deben pertenecer a la misma región de Model Studio.
+11. Infraestructura, despliegue y seguridad
+11.1 VPS y dominio
+Contratar Hostinger VPS KVM 2, Ubuntu 24.04 LTS. No comprar/activar un plan sin que el usuario revise el cobro inicial, renovación, plazo y medio de pago.
+Registrar un dominio .com propio. Gestionar la zona DNS desde Cloudflare. Crear un registro A para el subdominio peaje que apunte a la IP pública del VPS.
+Configurar firewall: permitir SSH de forma restringida y puertos públicos 80/443. PostgreSQL no debe exponerse a Internet.
+Instalar Docker Engine y Docker Compose. Desplegar Next.js, FastAPI, PostgreSQL y Caddy en una red privada de Compose.
+Caddy recibe el dominio real, enruta /api/* a FastAPI y el resto a Next.js, y genera/renueva HTTPS automáticamente. Comprobar que DNS ya resuelva a la IP y que 80/443 estén abiertos.
+No usar subdominio localhost, IP privada, ngrok, túneles hacia laptop ni servidor de desarrollo en la entrega.
+11.2 RunPod
+Crear un Pod con RTX 3090 de 24 GB como objetivo inicial, usando una imagen CUDA/PyTorch compatible con el entrenamiento de pesos YOLO11 y EasyOCR.
+Montar almacenamiento persistente para pesos y entorno. Mantener el endpoint activo en el periodo de revisión. La GPU se factura mientras el Pod esté ejecutándose; detenerlo cuando no haga falta y tener presente que el almacenamiento puede seguir generando costo.
+Exponer HTTP port 8000; ejecutar Uvicorn escuchando 0.0.0.0:8000; copiar la URL proxy HTTPS de RunPod a INFERENCE_URL en el VPS.
+Configurar la misma INFERENCE_API_KEY en el servicio RunPod y en el VPS. No ponerla en el APK ni en JavaScript del navegador.
+Probar desde el VPS la URL /health y luego POST /predict con un frame real. Confirmar respuesta de M1, M2 y M3 antes de conectar la app.
+11.3 Variables .env de producción
+APP_ENV=production
+PUBLIC_BASE_URL=https://peaje.<TU_DOMINIO>
+DATABASE_URL=postgresql+psycopg://<USER>:<PASSWORD>@db:5432/peaje
+JWT_SECRET=<GENERAR_32_BYTES_O_MAS>
+INFERENCE_URL=https://<POD_ID>-8000.proxy.runpod.net
+INFERENCE_API_KEY=<SECRET>
+FIREBASE_PROJECT_ID=<PROJECT_ID>
+FIREBASE_SERVICE_ACCOUNT_JSON=<RUTA_SEGURA_O_SECRET_FILE>
+QWEN_BASE_URL=https://<WORKSPACE_ID>.us-east-1.maas.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen3.5-plus
+QWEN_API_KEY=<SECRET>
+TEACHER_ADMIN_EMAIL=doc.alvaro.pinto.ma@unifranz.edu.bo
+TIMEZONE=America/La_Paz
+
+Crear .env.example con nombres y valores ficticios, nunca secretos. Añadir .env, claves privadas, credenciales Firebase, pesos privados y backups a .gitignore cuando corresponda.
+El servicio Firebase Admin usa una cuenta de servicio privada; no publicar su JSON en Git ni incluirla en la APK.
+No almacenar RUNPOD_API_KEY, QWEN_API_KEY, JWT_SECRET, contraseñas de DB ni Firebase service account en el frontend.
+11.4 Seguridad y respaldos
+HTTPS obligatorio; cookies web HttpOnly, Secure y SameSite Lax; expiración y revocación de tokens; roles ADMIN/OPERADOR verificados en backend.
+Validar tamaño y tipo real de archivos; límite sugerido 10 MB por imagen; limitar frecuencia de captura, chat y consultas; evitar logs de tokens y credenciales.
+Guardar evidencias bajo un directorio persistente del VPS y servirlas solo a usuarios autenticados; no permitir rutas arbitrarias ni directory traversal.
+Crear script de respaldo PostgreSQL (pg_dump comprimido) y respaldo de evidencias. Guardar en directorio protegido security/backups en el VPS y habilitar descarga/exportación solo para ADMIN.
+Crear restauración comprobada en una base de pruebas. Un backup no se considera verificado hasta que se compruebe que puede restaurarse.
+Mantener logs rotados, healthchecks y reinicio automático de contenedores; no usar imágenes Docker latest sin pinning en producción.
+12. Organización del repositorio y entregables
+12.1 Estructura fija
+peaje-inteligente/
+├── web/                 # Next.js + React + TypeScript
+├── api/                 # FastAPI + reglas de negocio + DB + agente
+├── inference/           # FastAPI RunPod + M1/M2/M3 + Dockerfile
+├── mobile/              # React Native / Expo Android
+├── training/            # Notebooks Colab M1/M2/M3 y métricas
+├── datasets/            # Solo instrucciones/metadata; datasets grandes en Roboflow
+├── deployment/          # Docker Compose, Caddyfile, scripts VPS
+├── docs/                # Diagramas, OpenAPI/Postman, guía de despliegue
+├── security/            # Scripts de backup; exportaciones ignoradas por Git
+├── .env.example
+├── .gitignore
+└── README.md
+
+12.2 README
+Nombre del proyecto, integrantes y roles (dataset, entrenamiento, inferencia, web/agente, app móvil).
+Diagrama de arquitectura y descripción del flujo real.
+Tecnologías y versiones exactas fijadas.
+Cómo reproducir entrenamiento en Colab, etiquetado Roboflow y despliegue RunPod.
+Cómo desplegar VPS y configurar dominio, DNS, HTTPS, variables y Firebase.
+URL real del subdominio, URL RunPod, datasets Roboflow y documentación API; no publicar claves.
+12.3 Tres enlaces finales
+Enlace que se entrega
+Contenido
+Condición
+1. Repositorio Git
+Código web, backend, móvil, inferencia, notebooks, README y .env.example.
+Público o compartido con el docente; no secretos.
+2. Carpeta Drive
+Video 8–12 min, informe técnico PDF, APK, capturas, API Swagger/Postman, métricas y bonus si aplica.
+Permisos de lectura para el docente; enlaces probados.
+3. Subdominio HTTPS
+Aplicación web en producción y login Google; docente previamente autorizado ADMIN.
+Disponible durante revisión; no localhost ni túneles.
+
+12.4 Informe técnico PDF
+Arquitectura y tecnologías, datasets (origen, cantidad, clases, proporción, aumentaciones), proceso de entrenamiento y versiones.
+Métricas reales de M1/OCR, M2, M3, latencia de inferencia y latencia punta a punta.
+Mecanismo de tiempo real, seguridad, autenticación, tarifas, estados y alertas.
+Problemas encontrados y soluciones reales; limitaciones (ángulo, oclusiones, iluminación).
+No incluir credenciales, client secret, tokens, claves ni información privada de usuarios.
+12.5 Video demostración (8 a 12 minutos)
+Presentación de integrantes y arquitectura (máximo 1 minuto).
+Login Google en web y móvil; enseñar rechazo de una cuenta no autorizada.
+Modo Caseta con video/cámara real; mostrar placa, categoría, ejes, tarifa y resultado en pantalla del teléfono.
+Pantalla dividida: el mismo paso aparece instantáneamente en el panel web sin recargar.
+Agente con los cuatro estados, consulta de texto y consulta por imagen.
+Alerta en vivo por placa no registrada y por saldo insuficiente.
+Consola RunPod mostrando Pod activo y una petición real al endpoint único.
+Métricas, limitaciones y conclusión. Todos los integrantes deben participar si es trabajo grupal.
+13. Puntos adicionales
+La consigna indica hasta +20. En trabajo individual son opcionales; en equipo son obligatorios. Preparar los cuatro componentes desde el código, pero la evidencia solo se declara cuando está ejecutada y validada.
+Bonificación
+Implementación definida
+Evidencia real requerida
++5 Entornos
+Usar Python venv por servicio y requirements.txt con versiones fijadas; incluir script diagnostico_entorno.py.
+Salida real de versiones Python, Torch, CUDA y Ultralytics desde cada entorno de nube; incluir instrucciones README.
++5 RunPod
+La inferencia final ya se diseña para correr en RunPod Pod RTX 3090 durante revisión.
+Captura/video de consola RunPod y petición /predict real durante la demostración.
++5 Pasajeros
+M4 opcional: YOLO11n-seg/person en fotograma, filtrar máscaras cuyo centro pertenezca a la máscara de vehículo/cabina; persistir pasajeros en pasos y mostrarlo en panel.
+Métricas y caso real con varias personas visibles. No reconocimiento facial, no extraer ni guardar recortes de rostros; mostrar solo máscara/conteo.
++5 Hardware
+ESP32 DevKit con LED y buzzer. El dispositivo consulta por HTTPS eventos pendientes desde endpoint protegido y activa señal verde/roja según paso/alerta.
+Video del dispositivo físico conectado y reaccionando a una detección/alerta real. La simulación no sustituye hardware físico.
+
+HARDWARE NO INCLUIDO EN EL LABORATORIO BASE
+Para obtener el punto de hardware se necesita disponer físicamente de un ESP32, cable, buzzer activo, LED, resistencias y conexión Wi‑Fi. Antigravity puede crear firmware y endpoint, pero no puede validar un dispositivo que no está conectado. No afirmar esta bonificación sin prueba.
+
+14. Plan de ejecución priorizado para Antigravity
+El orden siguiente evita invertir tiempo en extras antes de tener un sistema desplegado. Antigravity debe mantener un archivo STATUS.md con hecho, en curso, bloqueado, evidencia y siguiente acción.
+Prioridad
+Acción y resultado esperado
+P0 — Auditoría inicial
+Leer el repositorio y archivos montados; localizar M1, datasets, notebooks, credenciales de configuración, proyecto móvil/web previo. Reportar qué existe y qué falta. No borrar código.
+P1 — Esqueleto desplegable
+Crear estructura Git, web Next.js, FastAPI, PostgreSQL, Caddy y Docker Compose. Levantar el subdominio HTTPS real. Healthcheck funcional.
+P2 — Auth y datos
+Configurar Firebase Google Auth, lista blanca, ADMIN docente, rol operador, migraciones, 20 vehículos DEMO, caseta y tarifas. API protegida.
+P3 — Inferencia RunPod
+Recuperar M1; entrenar/validar M2 y M3 solo con los datos disponibles y etiquetas correctas; construir el endpoint único; probar desde VPS.
+P4 — Flujo real de peaje
+Implementar POST frame, reglas, sentido, origen/destino, deduplicación, saldo, estados, alerta, evidencia y persistencia.
+P5 — Tiempo real y web
+Panel, CRUD, historial y alertas; SSE y verificación sin recarga.
+P6 — Agente Qwen
+Function calling con consulta por texto e imagen, cuatro estados, coincidencias OCR y respuestas sin inventar.
+P7 — App Android
+Expo cámara, Google, Modo Caseta, Modo Consulta, conexión al VPS y APK EAS Build.
+P8 — Pruebas punta a punta
+Pruebas en teléfono real con video/cámara, varios tipos de vehículo, placas legibles, sin placa y casos de saldo.
+P9 — Bonificaciones y entrega
+Venv/diagnóstico, pasajeros si viable, ESP32 si hay hardware; README, PDF, capturas, API, APK y video.
+
+14.1 Regla de alcance cuando falten horas
+No sacrificar publicación, autenticación, guardado real, inferencia real, SSE y APK para añadir animaciones, gráficos decorativos o puntos extra. Si el entrenamiento propio no puede completarse por falta de imágenes anotadas, terminar toda la plataforma, dejar los notebooks preparados y mostrar con transparencia el estado real del modelo. No usar un modelo descargado al azar ni inventar métricas para aparentar cumplimiento.
+14.2 Requisitos que dependen del estudiante
+Acceso/recurso
+Qué debe aportar el estudiante
+Dominio y VPS
+Comprar/registrar el dominio y VPS, autorizar el costo/plazo, facilitar IP y acceso SSH por un canal seguro.
+RunPod
+Cuenta, crédito de uso y permiso de crear el Pod GPU.
+Google/Firebase
+Proyecto Firebase/Cloud, habilitar Google provider, crear client IDs y service account; agregar SHA-1 de EAS.
+Roboflow
+Workspace y acceso a los datasets propios; subir/etiquetar imágenes.
+M1
+Pesos y dataset/notebook del detector de placas de trabajo anterior.
+Qwen
+Cuenta Model Studio y API key de región Virginia.
+Dispositivo de prueba
+Teléfono Android con cámara, conexión de datos/Wi‑Fi y video real de tráfico; ESP32 solo si se busca esa bonificación.
+
+15. Pruebas de aceptación
+Cada prueba debe guardar evidencia (captura, log o respuesta API) y marcarse PASS/FAIL. Antigravity no debe poner PASS por haber escrito el código: tiene que ejecutar la prueba.
+ID
+Prueba
+Criterio de aceptación
+Resultado
+AUTH-01
+Google autorizado
+Docente inicia sesión en web y queda como ADMIN.
+PASS/FAIL
+AUTH-02
+Google no autorizado
+Otra cuenta inicia sesión; recibe acceso denegado; no obtiene rutas protegidas.
+PASS/FAIL
+MOB-01
+APK instalable
+APK instalada en Android real; abre y solicita cámara.
+PASS/FAIL
+MOB-02
+Captura en vivo
+Modo Caseta transmite 2 FPS al VPS con caseta y sentido.
+PASS/FAIL
+AI-01
+Placa boliviana
+M1 localiza placa, OCR la lee y la normaliza.
+PASS/FAIL
+AI-02
+Clase vehículo
+M2 devuelve una de las cinco clases con confianza.
+PASS/FAIL
+AI-03
+Ejes
+M3 devuelve ejes sobre vista lateral; o revisión manual si no se ven.
+PASS/FAIL
+DB-01
+Persistencia
+Paso guardado se mantiene al reiniciar contenedores.
+PASS/FAIL
+DB-02
+20 vehículos
+Base contiene al menos 20 vehículos DEMO y seed idempotente.
+PASS/FAIL
+PAY-01
+Saldo suficiente
+Se registra paso y descuenta una vez el monto configurado.
+PASS/FAIL
+PAY-02
+Saldo insuficiente
+No descuenta; crea alerta SIN_SALDO.
+PASS/FAIL
+PAY-03
+No registrada
+Guarda paso IDENTIFICADA_NO_REGISTRADA y alerta.
+PASS/FAIL
+RT-01
+Tiempo real
+El panel recibe el mismo paso sin recargar, visible mientras la app captura.
+PASS/FAIL
+CHAT-01
+Cuatro estados
+Prueba placa registrada con paso, registrada sin paso, detectada no registrada y no existe.
+PASS/FAIL
+CHAT-02
+Texto e imagen
+Consulta del agente por texto y por foto; ambos llegan a datos reales.
+PASS/FAIL
+CHAT-03
+Confusiones OCR
+Prueba al menos una sustitución (3/8, B/8, 0/O, 5/S) y devuelve sugerencia sin asumir.
+PASS/FAIL
+SEC-01
+Secreto
+Buscar claves en git history y archivos; .env no está versionado.
+PASS/FAIL
+OPS-01
+Salud nube
+Dashboard muestra RunPod disponible, los tres pesos cargados y latencia.
+PASS/FAIL
+OPS-02
+HTTPS
+Dominio con certificado válido y sin contenido mixto.
+PASS/FAIL
+OPS-03
+Reinicio
+Reiniciar VPS/Compose y confirmar autoarranque y datos persistentes.
+PASS/FAIL
+
+16. Prompt inicial para Antigravity
+INSTRUCCIÓN
+Copia el siguiente prompt en Antigravity después de adjuntar este documento y abrir el repositorio del proyecto. El documento entero prevalece sobre preferencias improvisadas del agente.
+
+Actúa como arquitecto de software senior, ingeniero full-stack, ingeniero MLOps y responsable de despliegue. Tu tarea es IMPLEMENTAR, PROBAR y DESPLEGAR el Laboratorio Final de Sistema Inteligente de Control de Peaje definido en el documento adjunto. No quiero solo explicaciones, pseudocódigo ni una lista de recomendaciones. Trabaja sobre el repositorio real abierto en este espacio.
+ 
+REGLAS NO NEGOCIABLES
+1. Lee completo el documento adjunto y respeta las decisiones de arquitectura y tecnologías. No propongas alternativas ni cambies la pila: Hostinger KVM 2 Ubuntu 24.04 + Docker Compose + Caddy; Next.js/React/TypeScript; FastAPI/Python 3.11; PostgreSQL 16; SSE; Expo React Native; Firebase Google Auth; Roboflow + Google Colab; YOLO11 M1/M2/M3 + EasyOCR; RunPod Pod RTX 3090; Qwen3.5-Plus Model Studio; GitHub y Google Drive.
+2. Inspecciona primero todo el repositorio, notebooks, pesos .pt, datasets, archivos de configuración y recursos disponibles. Reutiliza el detector M1 que ya se desarrolló en clases. No borres código funcional ni entrenes sobre supuestos.
+3. Nada de lo que se demuestre puede ejecutarse en la laptop: prohíbe localhost, IP privada, ngrok, túneles personales y APIs locales en configuración de producción. La laptop solo es estación de desarrollo. El sistema final debe usar URLs HTTPS públicas.
+4. No inventes datos, métricas, detecciones, entrenamiento, disponibilidad de modelos ni pruebas. Separa DEMO de datos reales. Si falta un peso o una credencial, informa exactamente qué falta y continúa con los componentes independientes.
+5. No compres servicios, no cargues saldo, no aceptes suscripciones, no borres bases ni ejecutes operaciones facturables/destructivas sin autorización explícita del usuario. No escribas secretos en Git.
+6. No te detengas al crear archivos: ejecuta pruebas, corrige errores, construye contenedores, despliega y verifica desde una red externa. Mantén STATUS.md con Hecho, En curso, Bloqueado, evidencia y próxima acción.
+ 
+ORDEN DE EJECUCIÓN
+A. Audita el proyecto y genera INVENTORY.md: archivos encontrados, modelo M1, datasets, credenciales/configuraciones (solo nombres, nunca valores secretos) y bloqueos.
+B. Construye la estructura del repositorio, la aplicación Next.js, FastAPI, PostgreSQL, Docker Compose y Caddy. Deja preparada la publicación HTTPS en el subdominio real.
+C. Implementa Firebase Google Auth en WEB y ANDROID; lista blanca de PostgreSQL; rol ADMIN/OPERADOR; pre-registra doc.alvaro.pinto.ma@unifranz.edu.bo como ADMIN. Implementa migraciones y 20 vehículos DEMO con seed idempotente.
+D. Implementa datos y reglas: vehículos, casetas, tarifas, pasos, detecciones, alertas, auditoría; sentido ENTRADA/SALIDA, origen/destino, saldo, tarifa configurable, no cobro si OCR/ejes requieren revisión, no registrada y sin saldo. Usa ejemplo de 10 Bs/eje solo como tarifa DEMO editable.
+E. En Colab/Roboflow prepara M2 YOLO11-seg con cinco clases (moto, auto, minibús, camión, bus) y M3 YOLO11-pose con hasta 8 keypoints de rueda en vista lateral. M1 debe reutilizar pesos anteriores + EasyOCR. Si faltan datos/etiquetas, no finjas entrenamiento: crea notebooks, estructura y diagnóstico y deja estado explícito.
+F. Crea en RunPod un único FastAPI /predict que cargue M1+OCR, M2 y M3 una vez, y /health. Devuelve JSON con placa, confianza OCR, categoría, confianza, ejes, keypoints y latencia. Protege con INFERENCE_API_KEY. Usa puerto 8000 y bind 0.0.0.0.
+G. Conecta la API VPS a INFERENCE_URL. App Android envía frames JPEG 2 FPS desde expo-camera a POST /api/v1/pasos/frame. Aplica deduplicación por placa/caseta/sentido para no registrar un paso por frame.
+H. Implementa SSE /api/v1/events/stream y panel web que actualice pasos, alertas, contadores y recaudación en vivo sin recargar. Implementa CRUD e historial.
+I. Implementa Qwen3.5-Plus con function calling limitado a herramientas del backend para las consultas por texto y por imagen. Las cuatro respuestas deben ser: REGISTRADA_Y_CON_PASO, REGISTRADA_SIN_PASO, IDENTIFICADA_NO_REGISTRADA y NO_EXISTE. Normaliza placas y sugiere coincidencias O/0, I/1, B/8, S/5 y 3/8. Nunca des acceso SQL directo al LLM ni aceptes datos inventados.
+J. Implementa Expo Modo Caseta y Modo Consulta; compila APK con EAS Build en la nube. Prueba en teléfono Android real.
+K. Genera README, .env.example, requirements.txt con versiones fijadas, diagnóstico venv, Swagger/Postman, tests, informe técnico PDF, capturas y guion de video. Bonus pasajero/hardware solo si se demuestra realmente.
+ 
+CRITERIO FINAL
+No declares completo hasta que exista: (1) subdominio HTTPS real, (2) login Google y lista blanca, (3) API y PostgreSQL en nube con 20 DEMO, (4) endpoint RunPod con modelos realmente cargados, (5) paso enviado por teléfono y guardado, (6) panel actualizado por SSE, (7) consultas del agente por texto e imagen con cuatro estados, (8) APK instalada, y (9) evidencias de pruebas. Si un bloque está impedido por una cuenta/dataset/credencial que solo puede aportar el usuario, entrega el código completo, la configuración pendiente exacta y continúa con lo demás.
+ 
+COMIENZA AHORA por la auditoría del repositorio y continúa automáticamente con la prioridad más alta que no esté bloqueada. No me preguntes de nuevo información que ya esté en el documento o en los archivos.
+
+CÓMO USAR EL PROMPT
+Adjuntar también los pesos/datasets/notebooks anteriores de M1 si están fuera del repositorio. Cuando Antigravity solicite credenciales, introducirlas en los secretos del entorno o en el .env del servidor por un canal seguro; nunca pegarlas en README ni archivos versionados.
+
+17. Referencias oficiales y notas de costos
+Los precios y límites de servicios cambian; se consultaron las páginas oficiales disponibles el 24 de noviembre de 2026. Confirmar el costo final, región, método de pago y disponibilidad antes de crear cada recurso.
+Hostinger VPS – planes KVM — https://www.hostinger.com/es/servidor-vps
+KVM 2 publicado con 2 vCPU, 8 GB RAM, 100 GB NVMe; oferta visualizada 7,79 €/mes facturada por 24 meses (186,96 € iniciales) y renovación 14,99 €/mes. Ver checkout antes de pagar.
+RunPod – GPU pricing — https://www.runpod.io/pricing
+La página de Pods mostró RTX 3090 a partir de 0,50 USD/h en la tabla de precios. Costos varían por disponibilidad/tipo de nube; 4 h ≈ 2 USD, 8 h ≈ 4 USD antes de almacenamiento/impuestos. Detener Pod al terminar el uso.
+RunPod – HTTP proxy/networking — https://github.com/runpod/runpod-plugins-official/blob/main/plugins/runpod/skills/runpod-usage/reference/networking.md
+El proxy usa https://<pod-id>-<port>.proxy.runpod.net; el proceso debe escuchar 0.0.0.0 y el proxy no incorpora autenticación, así que el endpoint debe protegerse.
+Roboflow pricing — https://roboflow.com/pricing
+Free tier publicado a 0 USD, con créditos mensuales limitados; revisar consumo de etiquetado/augmentations y configuración de privacidad.
+Ultralytics – segment datasets — https://docs.ultralytics.com/datasets/segment/
+Formato y preparación de datasets para segmentación de instancias.
+Ultralytics – pose datasets — https://docs.ultralytics.com/datasets/pose/
+Formato YOLO Pose, coordenadas y keypoints.
+Firebase – Google sign-in web — https://firebase.google.com/docs/auth/web/google-signin
+Proveedor Google y configuración de inicio de sesión en aplicación web.
+Firebase – Google sign-in Android — https://firebase.google.com/docs/auth/android/google-signin
+Configuración Google Sign-In para Android y huella SHA-1.
+Firebase – authorized domains — https://firebase.google.com/docs/auth/faq-and-troubleshooting
+Gestión de dominios autorizados para Authentication.
+Expo EAS Build — https://docs.expo.dev/build/
+Compilación alojada en la nube para React Native/Expo.
+Expo – APK — https://docs.expo.dev/build-reference/apk/
+Configurar build profile para producir APK instalable.
+Qwen Function Calling — https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling
+Qwen permite function calling con herramientas ejecutadas por la aplicación; la ejecución de cada función ocurre en el backend.

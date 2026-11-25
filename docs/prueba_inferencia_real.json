@@ -1,0 +1,12 @@
+{
+  "health": {
+    "model_ready": true,
+    "missing": [],
+    "uptime_s": 8
+  },
+  "http": 200,
+  "categoria": "minibus",
+  "ejes": 2,
+  "revision": true,
+  "latencia_ms": 906
+}

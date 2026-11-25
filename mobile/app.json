@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Peaje La Paz",
+    "slug": "peaje-la-paz",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "bo.edu.peaje.lapaz",
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "@react-native-google-signin/google-signin"
+    ],
+    "owner": "manuelnajeras-team",
+    "extra": {
+      "eas": {
+        "projectId": "312f8626-ed30-47ab-8b2f-a3bd0f6f9bcd"
+      }
+    }
+  }
+}

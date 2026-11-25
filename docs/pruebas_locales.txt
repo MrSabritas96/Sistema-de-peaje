@@ -1,0 +1,8 @@
+waiting for server to start.... done
+server started
+waiting for server to shut down........ done
+server stopped
+PASS red HTTP DEMO: frame, inferencia fixture, PostgreSQL, evidencia y evento SSE del mismo paso
+PASS pg_dump y restauracion en base independiente con 20 DEMO
+PASS HTTP salud, JWT local, cuatro consultas, JPEG, modelo ausente, catalogos y tarifas
+PASS seed idempotente, concurrencia, cobro, saldo, alerta, sentido, revision y detecciones

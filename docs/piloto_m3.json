@@ -1,0 +1,38 @@
+[
+  {
+    "archivo": "photo_14_2026-11-25_10-13-04",
+    "split": "test",
+    "ejes_reales": 2,
+    "puntos_aceptados": 1
+  },
+  {
+    "archivo": "photo_13_2026-11-25_10-13-04",
+    "split": "test",
+    "ejes_reales": 2,
+    "puntos_aceptados": 1
+  },
+  {
+    "archivo": "photo_24_2026-11-25_10-13-04",
+    "split": "test",
+    "ejes_reales": 2,
+    "puntos_aceptados": 1
+  },
+  {
+    "archivo": "photo_60_2026-11-25_10-13-04",
+    "split": "test",
+    "ejes_reales": 2,
+    "puntos_aceptados": 1
+  },
+  {
+    "archivo": "photo_9_2026-11-25_10-13-04",
+    "split": "test",
+    "ejes_reales": 2,
+    "puntos_aceptados": 1
+  },
+  {
+    "archivo": "photo_44_2026-11-25_10-14-22",
+    "split": "reto",
+    "ejes_reales": 3,
+    "puntos_aceptados": 1
+  }
+]

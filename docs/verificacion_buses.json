@@ -1,0 +1,102 @@
+{
+  "buses": [
+    {
+      "foto": 1,
+      "categoria": "bus"
+    },
+    {
+      "foto": 2,
+      "categoria": "bus"
+    },
+    {
+      "foto": 3,
+      "categoria": "bus"
+    },
+    {
+      "foto": 4,
+      "categoria": "bus"
+    },
+    {
+      "foto": 5,
+      "categoria": "bus"
+    },
+    {
+      "foto": 6,
+      "categoria": "bus"
+    },
+    {
+      "foto": 7,
+      "categoria": "bus"
+    },
+    {
+      "foto": 8,
+      "categoria": "bus"
+    },
+    {
+      "foto": 9,
+      "categoria": "bus"
+    },
+    {
+      "foto": 10,
+      "categoria": "minibus"
+    },
+    {
+      "foto": 11,
+      "categoria": "bus"
+    },
+    {
+      "foto": 12,
+      "categoria": "bus"
+    },
+    {
+      "foto": 13,
+      "categoria": "bus"
+    },
+    {
+      "foto": 14,
+      "categoria": "bus"
+    },
+    {
+      "foto": 15,
+      "categoria": "bus"
+    },
+    {
+      "foto": 16,
+      "categoria": "bus"
+    }
+  ],
+  "controles": [
+    [
+      "minibus",
+      "minibus"
+    ],
+    [
+      "camion",
+      "minibus"
+    ],
+    [
+      "bus",
+      "minibus"
+    ],
+    [
+      "bus",
+      "minibus"
+    ],
+    [
+      "bus",
+      "bus"
+    ],
+    [
+      "bus",
+      "minibus"
+    ],
+    [
+      "auto",
+      "minibus"
+    ],
+    [
+      "moto",
+      null
+    ]
+  ]
+}

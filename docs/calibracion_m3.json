@@ -1,0 +1,24 @@
+{
+  "umbral_piloto": 0.6,
+  "criterio": "elegido en validacion por ubicacion dentro de 0.12 diagonales, despues conteo y MAE",
+  "resultados": {
+    "val": {
+      "n": 7,
+      "conteo_exacto": 1,
+      "todos_centros_cercanos": 1,
+      "mae": 0.8571
+    },
+    "test": {
+      "n": 5,
+      "conteo_exacto": 1,
+      "todos_centros_cercanos": 0,
+      "mae": 0.8
+    },
+    "reto": {
+      "n": 1,
+      "conteo_exacto": 0,
+      "todos_centros_cercanos": 0,
+      "mae": 2.0
+    }
+  }
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "foto": 1,
+    "categoria": null,
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 2,
+    "categoria": null,
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 3,
+    "categoria": null,
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 4,
+    "categoria": "minibus",
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 5,
+    "categoria": "minibus",
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 6,
+    "categoria": "minibus",
+    "ejes": 2,
+    "revision": true
+  },
+  {
+    "foto": 7,
+    "categoria": "minibus",
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 8,
+    "categoria": "minibus",
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 9,
+    "categoria": "minibus",
+    "ejes": 2,
+    "revision": true
+  },
+  {
+    "foto": 10,
+    "categoria": "minibus",
+    "ejes": 2,
+    "revision": true
+  },
+  {
+    "foto": 11,
+    "categoria": "minibus",
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 12,
+    "categoria": "minibus",
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 13,
+    "categoria": "minibus",
+    "ejes": 2,
+    "revision": true
+  },
+  {
+    "foto": 14,
+    "categoria": "minibus",
+    "ejes": 2,
+    "revision": true
+  },
+  {
+    "foto": 15,
+    "categoria": null,
+    "ejes": null,
+    "revision": true
+  },
+  {
+    "foto": 16,
+    "categoria": "minibus",
+    "ejes": 2,
+    "revision": true
+  }
+]

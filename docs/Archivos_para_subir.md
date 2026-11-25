@@ -1,0 +1,7 @@
+# Archivos para subir
+1. **Codigo_peaje.zip** contiene el código para GitHub o el VPS, el notebook Colab y las pruebas reproducibles.
+2. **Llantas_para_revisar.zip** corresponde a la sección 8 docente. En Roboflow crea un proyecto de Keypoint Detection con clase llanta. Usa el orden centro, contacto, superior, izquierda y derecha. Importa las imágenes y etiquetas juntas y comprueba un ejemplo antes de revisar el lote. Si el importador de tu cuenta no reconoce el esqueleto, conserva el ZIP y usa el editor del proyecto para mapear esos cinco puntos.
+3. **M2_mascaras_para_revisar.zip** debe importarse en un proyecto separado de Instance Segmentation. El orden de clases es moto, auto, minibus, camion y bus. Revisa polígonos y clases, especialmente motos, buses y camiones.
+4. **M3_piloto_revisado.zip** contiene cuatro vehículos con ocho posiciones de centro de rueda. Es un ejemplo del formato de producción. Para cada vehículo de perfil se marcan centros de adelante hacia atrás. Las posiciones sin rueda llevan visibilidad cero. Un vehículo con ejes indeterminables se conserva para probar revisión manual.
+5. **Informe_de_avance.pdf** resume pruebas reales. **Pruebas_locales.txt** registra la ejecución de la API. El ZIP de código contiene el esquema OpenAPI y el guion del video.
+Antes de publicar fotografías de calle en un servicio externo, comprueba el destino y la visibilidad del proyecto. Los ZIP de datos del laboratorio se mantienen en la laptop hasta elegir destino.

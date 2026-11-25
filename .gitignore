@@ -1,0 +1,12 @@
+datos_locales/
+.env
+*.pt
+*.pth
+__pycache__/
+node_modules/
+.next/
+*.tsbuildinfo
+evidencias/
+firebase-admin*.json
+security/backups/
+.env.local
