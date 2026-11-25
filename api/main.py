@@ -409,32 +409,8 @@ async def chat(q:Question,account=Depends(user)):
             data=lookup(corrected,account)
             if data["estado"]!="NO_EXISTE":
                 return {"respuesta":"¿Quisiste decir "+corrected+"? "+data["respuesta"],"datos":data,"sugerencias":[corrected]}
-    base=os.getenv("QWEN_BASE_URL","")
-    key=os.getenv("QWEN_API_KEY","")
-    if not key or not base.startswith("https://"):
-        return {"respuesta":"Escribe la placa que deseas consultar, por ejemplo 1234ABC, o selecciona su foto."}
-    tool={"type":"function","function":{"name":"consultar_placa","description":"Busca una placa boliviana en el registro.",
-          "parameters":{"type":"object","properties":{"placa":{"type":"string"}},"required":["placa"]}}}
-    messages=[{"role":"system","content":"Extrae la placa solicitada por el usuario y usa consultar_placa. Si falta, pide la placa."},
-              {"role":"user","content":q.pregunta}]
-    async with httpx.AsyncClient(timeout=25) as client:
-        try:
-            resp=await client.post(base.rstrip("/")+"/chat/completions",headers={"Authorization":"Bearer "+key},
-                json={"model":os.getenv("QWEN_MODEL","qwen3.5-plus"),"messages":messages,"tools":[tool]})
-            resp.raise_for_status()
-            calls=resp.json()["choices"][0]["message"].get("tool_calls",[])
-            if not calls:
-                return {"respuesta":"Indica la placa que quieres consultar."}
-            fn=calls[0]["function"]
-            if fn["name"]!="consultar_placa":
-                raise ValueError()
-            plate=normalize(json.loads(fn["arguments"])["placa"])
-            if not re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",plate) or plate not in normalize(q.pregunta):
-                return {"respuesta":"Confirma la placa completa, por ejemplo 1234ABC."}
-            result=lookup(plate,account)
-            return {"respuesta":plate+" · "+result["respuesta"],"datos":result}
-        except (ValueError,KeyError,IndexError,httpx.HTTPError):
-            raise HTTPException(502,"No se pudo consultar Qwen")
+    from .consultas import resumen
+    return resumen(q.pregunta) or {"respuesta":"Puedo consultar una placa por texto o foto, contar los vehículos inscritos o las placas detectadas, y revisar los pasos o el total cobrado hoy o ayer. ¿Qué dato del peaje necesitas?"}
 
 
 @app.post(prefix+"/chat/imagen")
