@@ -46,7 +46,9 @@ Para recrear el entorno de API usa Python 3.11, ejecuta `python -m venv .venv`, 
 
 ## Autoría y datos de entrenamiento
 
-Cuenta responsable del repositorio: MrSabritas96. La identificación académica de los integrantes y sus roles debe confirmarse para la entrega. Las anotaciones y el inventario se encuentran en datasets. Los paquetes M2_para_Colab.zip y M3_centros_para_Colab.zip se incluyen en herramientas de la entrega. Son exportaciones locales en formato YOLO. El enlace de publicación en Roboflow está pendiente de verificación.
+Cristian Manuél Nájera Mendoza es el único integrante y desarrollador del sistema. Se encargó de los datos, la visión artificial, la aplicación móvil, la API, el panel web y el despliegue.
+
+El dataset propio contiene 300 fotografías originales y 279 imágenes únicas por SHA-256. El ZIP original y el inventario se incluyen en la carpeta de herramientas. El [proyecto privado de Roboflow](https://app.roboflow.com/manuls-workspace/peaje-la-paz-minibuses) contiene los originales únicos. Los archivos M2_para_Colab.zip y M3_centros_para_Colab.zip contienen los recortes y etiquetas utilizados en los pilotos.
 
 ## Reproducir el entorno de inferencia
 
