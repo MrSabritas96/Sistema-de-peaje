@@ -1,4 +1,5 @@
 'use client';
+import {Agent} from '../Agent';
 import Photo from '../Photo';
 import {useEffect,useRef,useState} from 'react';
 import {call,googleLogin} from '../client';
@@ -12,7 +13,7 @@ export default function Mobile(){
  const [booths,setBooths]=useState<{id:number;nombre:string}[]>([]);
  const [boot,setBoot]=useState(''),[direction,setDirection]=useState('ENTRADA');
  const [notice,setNotice]=useState(''),[result,setResult]=useState(''),[overlay,setOverlay]=useState<Overlay|null>(null);
- const [answer,setAnswer]=useState(''),[aspect,setAspect]=useState(4/3);
+ const [aspect,setAspect]=useState(4/3);
  const video=useRef<HTMLVideoElement>(null);
  useEffect(()=>{call('sesion').then(()=>setAccess(true)).catch(()=>{})},[]);
  useEffect(()=>{
@@ -60,6 +61,6 @@ export default function Mobile(){
  {running&&overlay&&<svg viewBox={'0 0 '+overlay.width+' '+overlay.height} preserveAspectRatio="none" aria-label="Detecciones del último fotograma">{overlay.objects.map((o,i)=>{const [x,y,r,b]=o.box,c=colors[o.label]||'white';return <g key={i}><rect x={x} y={y} width={r-x} height={b-y} fill="none" stroke={c} strokeWidth="3"/><text x={x+4} y={y+22} stroke="#10252d" strokeWidth="4" paintOrder="stroke" fill={c} fontWeight="bold" fontSize="23">{o.label} {Math.round(o.score*100)}%</text></g>})}</svg>}</div>
  <button disabled={!Number.isInteger(+boot)||+boot<1} onClick={()=>{setNotice('');setOverlay(null);setResult('');setRunning(!running)}}>{running?'Detener cámara':'Iniciar captura'}</button><output aria-live="polite">{result||(running?'Esperando la primera lectura…':'')}</output></section>
  <Photo/>
- <section><h2>Consulta de vehículo</h2><form onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);setAnswer('Consultando…');try{const r=await call('chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pregunta:f.get('pregunta')})});setAnswer(r.respuesta)}catch(err){setAnswer(String(err))}}}><label>Placa o pregunta<input name="pregunta" placeholder="1234ABC"/></label><button>Consultar</button></form><output>{answer}</output></section></>}
+ <Agent/></>}
  {notice&&<p role="alert">{notice}</p>}</>
 }
