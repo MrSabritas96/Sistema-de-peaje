@@ -352,6 +352,12 @@ def save_rate(v:Rate):
     return v
 
 
+@app.get(prefix+"/casetas")
+def active_booths(account=Depends(user)):
+    with db.connect() as conn:
+        return [dict(row) for row in query(conn,"SELECT id,nombre FROM casetas WHERE activa ORDER BY nombre,id").mappings()]
+
+
 @app.put(prefix+"/casetas",dependencies=[Depends(admin)])
 def save_station(v:Station):
     with db.begin() as conn:

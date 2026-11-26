@@ -9,11 +9,15 @@ const colors:Record<string,string>={auto:'#69bcff',minibus:'#45e1a1',persona:'#f
 
 export default function Mobile(){
  const [access,setAccess]=useState(false),[running,setRunning]=useState(false);
- const [boot,setBoot]=useState('1'),[direction,setDirection]=useState('ENTRADA');
+ const [booths,setBooths]=useState<{id:number;nombre:string}[]>([]);
+ const [boot,setBoot]=useState(''),[direction,setDirection]=useState('ENTRADA');
  const [notice,setNotice]=useState(''),[result,setResult]=useState(''),[overlay,setOverlay]=useState<Overlay|null>(null);
  const [answer,setAnswer]=useState(''),[aspect,setAspect]=useState(4/3);
  const video=useRef<HTMLVideoElement>(null);
  useEffect(()=>{call('sesion').then(()=>setAccess(true)).catch(()=>{})},[]);
+ useEffect(()=>{
+  if(access)call('casetas').then(rows=>{setBooths(rows);setBoot(String(rows[0]?.id??''))}).catch(()=>setNotice('No se pudieron cargar las casetas activas.'));
+ },[access]);
  useEffect(()=>{
   if(!running)return;
   const controller=new AbortController(),session=crypto.randomUUID(),canvas=document.createElement('canvas');
@@ -51,7 +55,7 @@ export default function Mobile(){
  },[running,boot,direction]);
  return <><div className="mast"><header>CONTROL DE PEAJE · LA PAZ</header><h1>Caseta móvil</h1></div>
  {!access?<section><h2>Acceso del operador</h2><button onClick={async()=>{try{await googleLogin();setAccess(true);setNotice('')}catch(e){setNotice(String(e))}}}>Continuar con Google</button></section>:<>
- <section className="cameraCard"><h2>Cámara de la caseta</h2><div className="controls"><label>Caseta<input type="number" min="1" value={boot} disabled={running} onChange={e=>setBoot(e.target.value)}/></label><label>Sentido<select value={direction} disabled={running} onChange={e=>setDirection(e.target.value)}><option>ENTRADA</option><option>SALIDA</option><option value="AUTO">Automático</option></select></label></div>
+ <section className="cameraCard"><h2>Cámara de la caseta</h2><div className="controls"><label>Caseta<select value={boot} disabled={running||!booths.length} onChange={e=>setBoot(e.target.value)}>{!booths.length&&<option value="">Sin casetas disponibles</option>}{booths.map(b=><option key={b.id} value={b.id}>{b.nombre} · #{b.id}</option>)}</select></label><label>Sentido<select value={direction} disabled={running} onChange={e=>setDirection(e.target.value)}><option>ENTRADA</option><option>SALIDA</option><option value="AUTO">Automático</option></select></label></div>
  <div className="viewfinder" style={{aspectRatio:aspect}}><video ref={video} muted playsInline autoPlay/>{!running&&<span>Cámara detenida</span>}
  {running&&overlay&&<svg viewBox={'0 0 '+overlay.width+' '+overlay.height} preserveAspectRatio="none" aria-label="Detecciones del último fotograma">{overlay.objects.map((o,i)=>{const [x,y,r,b]=o.box,c=colors[o.label]||'white';return <g key={i}><rect x={x} y={y} width={r-x} height={b-y} fill="none" stroke={c} strokeWidth="3"/><text x={x+4} y={y+22} stroke="#10252d" strokeWidth="4" paintOrder="stroke" fill={c} fontWeight="bold" fontSize="23">{o.label} {Math.round(o.score*100)}%</text></g>})}</svg>}</div>
  <button disabled={!Number.isInteger(+boot)||+boot<1} onClick={()=>{setNotice('');setOverlay(null);setResult('');setRunning(!running)}}>{running?'Detener cámara':'Iniciar captura'}</button><output aria-live="polite">{result||(running?'Esperando la primera lectura…':'')}</output></section>
