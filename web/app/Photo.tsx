@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {call} from './client';
 
-type Result={preview:string; placa:string|null; categoria:string|null; ejes:number|null; pasajeros:number|null; respuesta:string};
+type Result={preview:string; placa:string|null; categoria:string|null; ejes:number|null; respuesta:string};
 export default function Photo(){
  const [result,setResult]=useState<Result|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -17,5 +17,5 @@ export default function Photo(){
  <button disabled={busy}>{busy?'Analizando foto…':'Analizar foto'}</button></form>
  {error&&<p role="alert">{error}</p>}
  {result&&<article aria-live="polite"><img alt="Foto analizada con las detecciones superpuestas" style={{display:'block',width:'100%',maxHeight:'65vh',objectFit:'contain',background:'#10282e',borderRadius:14}} src={'data:image/jpeg;base64,'+result.preview}/>
- <dl style={{display:'flex',gap:12,flexWrap:'wrap'}}>{Object.entries({'Placa':result.placa,'Categoría':result.categoria,'Ejes':result.ejes,'Pasajeros visibles':result.pasajeros}).map(([k,v])=><div key={k} style={{padding:'10px 16px',background:'#edf6f5',borderRadius:10}}><dt>{k}</dt><dd style={{margin:0,fontWeight:700}}>{v??'Sin confirmar'}</dd></div>)}</dl><p>{result.respuesta}</p></article>}</section>
+ <dl style={{display:'flex',gap:12,flexWrap:'wrap'}}>{Object.entries({'Placa':result.placa,'Categoría':result.categoria,'Ejes':result.ejes}).map(([k,v])=><div key={k} style={{padding:'10px 16px',background:'#edf6f5',borderRadius:10}}><dt>{k}</dt><dd style={{margin:0,fontWeight:700}}>{v??'Sin confirmar'}</dd></div>)}</dl><p>{result.respuesta}</p></article>}</section>
 }

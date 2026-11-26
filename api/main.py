@@ -284,7 +284,11 @@ async def events(request:Request,account=Depends(user)):
                         yield event("step.updated" if row["id"] in previous else "step.created",row)
                 with db.connect() as conn:
                     total=query(conn,"SELECT COALESCE(sum(monto),0) FROM pasos WHERE estado='PAGADO'").scalar()
+                    tarifas=query(conn,"""SELECT COALESCE(SUM(COALESCE(p.monto,t.monto)),0)
+                        FROM pasos p LEFT JOIN tarifas t ON t.categoria=p.categoria AND t.ejes=p.ejes
+                        WHERE p.ocultado_en IS NULL AND p.ejes IS NOT NULL""").scalar()
                 yield event("revenue.updated",{"total_bob":total})
+                yield event("tarifas.updated",{"total_bob":tarifas})
                 previous=marker
             recent=alerts(account)
             ids={a["id"] for a in recent}
