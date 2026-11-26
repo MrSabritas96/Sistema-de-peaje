@@ -178,13 +178,13 @@ def photo(digest:str,account=Depends(user)):
     return FileResponse(path,media_type="image/jpeg")
 
 
-async def analyze(file:UploadFile, plate_only=False):
+async def analyze(file:UploadFile, plate_only=False, still=False):
     raw=await file.read(10*1024*1024+1)
     if len(raw)>10*1024*1024:
         raise HTTPException(413)
     try:
         with Image.open(io.BytesIO(raw)) as im:
-            if im.format not in (("JPEG","PNG","WEBP") if plate_only else ("JPEG",)) or im.width*im.height>20_000_000:
+            if im.format not in (("JPEG","PNG","WEBP") if plate_only or still else ("JPEG",)) or im.width*im.height>20_000_000:
                 raise ValueError()
             im.load()
             if im.format!="JPEG":
@@ -412,6 +412,33 @@ async def chat(q:Question,account=Depends(user)):
     from .consultas import resumen
     return resumen(q.pregunta) or {"respuesta":"Puedo consultar una placa por texto o foto, contar los vehículos inscritos o las placas detectadas, y revisar los pasos o el total cobrado hoy o ayer. ¿Qué dato del peaje necesitas?"}
 
+
+@app.post(prefix+"/analisis/foto")
+async def analyze_photo(file:UploadFile=File(),account=Depends(user)):
+    raw,result=await analyze(file,still=True)
+    plate=normalize(result.get("plate"))
+    if not re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",plate):
+        with Image.open(io.BytesIO(raw)) as source:
+            crop=ImageOps.exif_transpose(source).convert("RGB")
+        if result.get("plate_bbox"):
+            crop=crop.crop(result["plate_bbox"])
+        elif result.get("target_box"):
+            w,h=crop.size
+            crop=crop.crop([round(n*scale) for n,scale in zip(result["target_box"],(w,h,w,h))])
+        if crop.width and crop.height:
+            buf=io.BytesIO()
+            crop.save(buf,"JPEG",quality=95)
+            buf.seek(0)
+            _,retry=await analyze(UploadFile(file=buf),plate_only=True)
+            candidate=normalize(retry.get("plate"))
+            if re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",candidate):
+                plate=candidate
+                result.update(plate=plate,ocr_confidence=retry.get("ocr_confidence"))
+    valid=bool(re.fullmatch(r"[0-9]{3,4}[A-Z]{3}",plate))
+    response=lookup(plate,account)["respuesta"] if valid else "Placa sin lectura completa. Prueba una toma más cercana."
+    return {"preview":base64.b64encode(annotated(raw,result)).decode(),"placa":plate if valid else None,
+            "categoria":result.get("vehicle_category"),"ejes":result.get("axles"),"pasajeros":result.get("pasajeros"),
+            "respuesta":response}
 
 @app.post(prefix+"/chat/imagen")
 async def image_question(file:UploadFile=File(),account=Depends(user)):
